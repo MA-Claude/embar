@@ -9,6 +9,9 @@ export type Channel = {
   youtube_url: string
   added_by: string | null
   created_at: string
+  category: string
+  subcategory: string
+  subscriber_count: string
 }
 
 export async function getChannels(): Promise<Channel[]> {
@@ -35,6 +38,9 @@ export async function addChannel(channel: {
   thumbnail_url: string
   youtube_url: string
   added_by: string
+  category: string
+  subcategory: string
+  subscriber_count: string
 }): Promise<{ error?: string }> {
   const { error } = await supabase.from('channels').insert(channel)
   if (error) {

@@ -1,7 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-/* ── NOVA (light mode — default) ── */
+/* ─────────────────────────────────────────────────────────────────────────────
+   EMBAR THEME SYSTEM
+   To add a new theme: add a new [data-theme="name"] block below and register
+   it in the THEMES array in lib/theme.ts. That's it.
+───────────────────────────────────────────────────────────────────────────── */
+
+/* ── NOVA — light, cobalt blue, coral (default) ── */
 :root {
   --bg: #F5F7FF;
   --surface: #FFFFFF;
@@ -15,25 +21,19 @@
   --border-strong: #B0BEF0;
   --accent-light: #EBF0FC;
   --coral-light: #FDF0EC;
-
-  /* legacy aliases still used in page.tsx */
   --blue: #1A4FD4;
   --blue-light: #EBF0FC;
   --blue-mid: #B8CCF5;
   --text-muted: #6070A8;
-
   --radius: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-full: 999px;
 }
 
-/* ── DUSK (dark mode) ── */
-[data-theme="dark"],
-[data-theme="dark"] * {
-  color-scheme: dark;
-}
+/* ── DUSK — dark indigo, purple, warm rose ── */
 [data-theme="dark"] {
+  color-scheme: dark;
   --bg: #0F0B1A;
   --surface: #130F22;
   --surface2: #1C1530;
@@ -46,13 +46,183 @@
   --border-strong: #3A3060;
   --accent-light: #231840;
   --coral-light: #2A1A14;
-
   --blue: #7B4FD4;
   --blue-light: #231840;
   --blue-mid: #3A3060;
   --text-muted: #9080B0;
 }
 
+/* ── EMBER — deep brown-black, coral, amber ── */
+[data-theme="ember"] {
+  color-scheme: dark;
+  --bg: #130B04;
+  --surface: #1C1208;
+  --surface2: #281A10;
+  --accent: #E85020;
+  --coral: #F0A040;
+  --text: #F5E8D0;
+  --text-mid: #C09060;
+  --muted: #805030;
+  --border: #3A2010;
+  --border-strong: #5A3818;
+  --accent-light: #2E1408;
+  --coral-light: #281808;
+  --blue: #E85020;
+  --blue-light: #2E1408;
+  --blue-mid: #4A2810;
+  --text-muted: #805030;
+}
+
+/* ── GROVE — forest green, cream, terracotta ── */
+[data-theme="grove"] {
+  color-scheme: dark;
+  --bg: #080F08;
+  --surface: #0E180E;
+  --surface2: #162016;
+  --accent: #4A9040;
+  --coral: #C05830;
+  --text: #E8F0D8;
+  --text-mid: #80A870;
+  --muted: #507040;
+  --border: #202E20;
+  --border-strong: #304430;
+  --accent-light: #142018;
+  --coral-light: #201408;
+  --blue: #4A9040;
+  --blue-light: #142018;
+  --blue-mid: #243A24;
+  --text-muted: #507040;
+}
+
+/* ── ROSE — deep rose-black, pink, blush ── */
+[data-theme="rose"] {
+  color-scheme: dark;
+  --bg: #130810;
+  --surface: #1C0E18;
+  --surface2: #281620;
+  --accent: #D04080;
+  --coral: #F080B0;
+  --text: #F5E0EC;
+  --text-mid: #C07090;
+  --muted: #804060;
+  --border: #3A1030;
+  --border-strong: #5A2048;
+  --accent-light: #2A0820;
+  --coral-light: #280A1C;
+  --blue: #D04080;
+  --blue-light: #2A0820;
+  --blue-mid: #3A1030;
+  --text-muted: #904060;
+}
+
+/* ── OCEAN — deep blue-black, electric blue, cyan ── */
+[data-theme="ocean"] {
+  color-scheme: dark;
+  --bg: #040C18;
+  --surface: #081220;
+  --surface2: #0E1C30;
+  --accent: #0080D0;
+  --coral: #00C8E0;
+  --text: #D0E8F8;
+  --text-mid: #6090C0;
+  --muted: #405870;
+  --border: #102038;
+  --border-strong: #1C3050;
+  --accent-light: #081828;
+  --coral-light: #041820;
+  --blue: #0080D0;
+  --blue-light: #081828;
+  --blue-mid: #102038;
+  --text-muted: #405870;
+}
+
+/* ── OBSIDIAN — near-black, silver, electric violet ── */
+[data-theme="obsidian"] {
+  color-scheme: dark;
+  --bg: #080808;
+  --surface: #0F0F12;
+  --surface2: #181820;
+  --accent: #8040F0;
+  --coral: #A060FF;
+  --text: #E8E8F0;
+  --text-mid: #9090B0;
+  --muted: #606080;
+  --border: #202030;
+  --border-strong: #303048;
+  --accent-light: #181028;
+  --coral-light: #140820;
+  --blue: #8040F0;
+  --blue-light: #181028;
+  --blue-mid: #201838;
+  --text-muted: #606080;
+}
+
+/* ── SAND — warm cream, terracotta, brown (light) ── */
+[data-theme="sand"] {
+  color-scheme: light;
+  --bg: #F5EDD8;
+  --surface: #FDF8EC;
+  --surface2: #EFE6D0;
+  --accent: #C05030;
+  --coral: #A04020;
+  --text: #2A1A08;
+  --text-mid: #5A3818;
+  --muted: #806040;
+  --border: #D8C8A8;
+  --border-strong: #C0A880;
+  --accent-light: #F8EAD8;
+  --coral-light: #F5E0CC;
+  --blue: #C05030;
+  --blue-light: #F8EAD8;
+  --blue-mid: #DEC8A0;
+  --text-muted: #806040;
+}
+
+/* ── MIDNIGHT — true dark, teal-green ── */
+[data-theme="midnight"] {
+  color-scheme: dark;
+  --bg: #060608;
+  --surface: #0A0A10;
+  --surface2: #101018;
+  --accent: #20A090;
+  --coral: #30C0A8;
+  --text: #E0EEE8;
+  --text-mid: #608878;
+  --muted: #406858;
+  --border: #141820;
+  --border-strong: #202830;
+  --accent-light: #081818;
+  --coral-light: #081410;
+  --blue: #20A090;
+  --blue-light: #081818;
+  --blue-mid: #102020;
+  --text-muted: #406858;
+}
+
+/* ── GOLD — amber-black, gold, yellow ── */
+[data-theme="gold"] {
+  color-scheme: dark;
+  --bg: #100A00;
+  --surface: #181200;
+  --surface2: #221A00;
+  --accent: #D0900A;
+  --coral: #F0B020;
+  --text: #F8ECC0;
+  --text-mid: #B08830;
+  --muted: #806020;
+  --border: #302000;
+  --border-strong: #483000;
+  --accent-light: #281800;
+  --coral-light: #201200;
+  --blue: #D0900A;
+  --blue-light: #281800;
+  --blue-mid: #381E00;
+  --text-muted: #806020;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BASE STYLES
+───────────────────────────────────────────────────────────────────────────── */
 * {
   box-sizing: border-box;
   margin: 0;

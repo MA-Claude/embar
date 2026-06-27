@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { signUp, signIn, signOut, getCurrentUsername } from "@/lib/auth";
+import { useTheme } from "@/lib/theme";
 
 const NAV_ITEMS = [
   { id: "home", label: "Home", icon: "⬡" },
@@ -136,7 +137,7 @@ export default function Home() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<"join" | "signin">("join");
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
-  const [isDark, setIsDark] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   // Auth state
   const [currentUser, setCurrentUser] = useState<string | null>(null);
@@ -209,7 +210,7 @@ export default function Home() {
   });
 
   return (
-    <div data-theme={isDark ? "dark" : "light"} style={{ minHeight: "100vh", background: "var(--bg)", transition: "background 0.2s ease" }}>
+    <div data-theme={theme} style={{ minHeight: "100vh", background: "var(--bg)", transition: "background 0.2s ease" }}>
 
       {/* NAV */}
       <nav style={{
@@ -265,8 +266,8 @@ export default function Home() {
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
           {/* THEME TOGGLE */}
           <button
-            onClick={() => setIsDark(!isDark)}
-            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            title={theme === 'dark' ? "Switch to light mode" : "Switch to dark mode"}
             style={{
               width: 36, height: 36,
               borderRadius: "var(--radius-full)",
@@ -278,7 +279,7 @@ export default function Home() {
               transition: "all .15s",
               flexShrink: 0,
             }}>
-            {isDark ? "☀" : "☾"}
+            {theme === 'dark' ? "☀" : "☾"}
           </button>
 
           <div style={{

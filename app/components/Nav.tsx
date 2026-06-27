@@ -1,12 +1,19 @@
 "use client";
 import { useState, useEffect } from "react";
 import { signUp, signIn, signOut, getCurrentUsername } from "@/lib/auth";
+import { useTheme } from "@/lib/theme";
 
 type Props = {
   activePage?: "home" | "youtube" | "communities" | "blogs";
+  // Optional: when on a channel page, pass the community theme so the Nav
+  // shows all three options (Light / Dark / Community) instead of just a toggle.
+  communityTheme?: { id: string; label: string };
+  viewMode?: "light" | "dark" | "community";
+  onViewModeChange?: (mode: "light" | "dark" | "community") => void;
 };
 
-export default function Nav({ activePage = "home" }: Props) {
+export default function Nav({ activePage = "home", communityTheme, viewMode, onViewModeChange }: Props) {
+  const { theme, setTheme } = useTheme();
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<"join" | "signin">("join");
@@ -105,6 +112,52 @@ export default function Nav({ activePage = "home" }: Props) {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
+          {/* Theme selector — 3 options on channel pages, simple toggle elsewhere */}
+          {communityTheme && onViewModeChange ? (
+            <div style={{
+              display: "flex", gap: 2,
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius-full)",
+              padding: 3,
+              background: "var(--surface2)",
+            }}>
+              {([
+                { mode: "light"     as const, label: "☀ Light" },
+                { mode: "dark"      as const, label: "☾ Dark" },
+                { mode: "community" as const, label: `◈ ${communityTheme.label}` },
+              ]).map(opt => (
+                <button
+                  key={opt.mode}
+                  onClick={() => {
+                    onViewModeChange(opt.mode);
+                    if (opt.mode !== "community") setTheme(opt.mode);
+                  }}
+                  style={{
+                    fontSize: 11, fontWeight: viewMode === opt.mode ? 600 : 400,
+                    padding: "4px 11px", borderRadius: "var(--radius-full)", border: "none",
+                    background: viewMode === opt.mode ? "var(--blue)" : "none",
+                    color: viewMode === opt.mode ? "white" : "var(--text-muted)",
+                    cursor: "pointer", fontFamily: "inherit",
+                    transition: "all .12s",
+                    whiteSpace: "nowrap" as const,
+                  }}
+                >{opt.label}</button>
+              ))}
+            </div>
+          ) : (
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              title={theme === 'dark' ? "Switch to light mode" : "Switch to dark mode"}
+              style={{
+                width: 32, height: 32, borderRadius: "var(--radius-full)",
+                border: "1px solid var(--border)",
+                background: "var(--surface)",
+                color: "var(--text-muted)",
+                cursor: "pointer", fontSize: 14,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >{theme === 'dark' ? "☀" : "☾"}</button>
+          )}
           {currentUser ? (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: "var(--text-mid)", fontWeight: 500 }}>
