@@ -180,9 +180,9 @@ The main focus and heart of Embar. This is where the majority of activity lives.
 
 1. ✅ Project setup (Next.js + GitHub + Vercel)
 2. ✅ CLAUDE.md project memory file
-3. Supabase connection
-4. User accounts and profiles
-5. Content pages (YouTube channels and videos)
+3. ✅ Supabase connection
+4. ✅ User accounts (username + password, no email required)
+5. ✅ Content pages — YouTube channels and videos
 6. Communities (creation, themes, joining)
 7. Individual reviews, discussions, blogs
 8. Community content layer (reviews/discussions/blogs within communities)
@@ -216,15 +216,70 @@ Region: West Europe (London)
 
 ## Theme system
 
-Six founding themes at minimum — more to be designed together:
-- Nova (light, cobalt blue, coral) — default
-- Dusk (dark indigo, purple, warm rose)
-- Ember (deep brown-black, coral, amber)
-- Grove (forest green, cream, terracotta)
-- Rose (deep rose-black, pink, blush)
-- Ocean (deep blue-black, electric blue, cyan)
+10 themes built and working. Registered in `lib/theme.ts` (THEMES array) and `app/globals.css` (one CSS block per theme). To add a new theme: add an entry to THEMES in lib/theme.ts AND a `[data-theme='name']` block in globals.css.
+
+**Platform themes** (user's global preference, saved to `localStorage` as `embar-theme`):
+- Nova (`light`) — cobalt blue, coral — default
+- Dusk (`dark`) — dark indigo, purple, warm rose
+
+**Community themes** (one auto-assigned per channel via name hash, future: set by community leaders):
+- Ember — deep brown-black, coral, amber — accent `#E07550`
+- Grove — forest green, cream, terracotta — accent `#4A8C5C`
+- Rose — deep rose-black, pink, blush — accent `#C46B8A`
+- Ocean — deep blue-black, electric blue, cyan — accent `#0EA5E9`
+- Obsidian — dark, purple — accent `#7C5CE8`
+- Sand — warm sand/gold (light theme) — accent `#C4A570`
+- Midnight — deep blue — accent `#4B5FD4`
+- Gold — dark, gold — accent `#D4A820`
+
+**How theme is applied:**
+- `data-theme` attribute on `<html>` element drives all CSS variables
+- Anti-flash script in `app/layout.tsx` sets data-theme before first paint (prevents white/dark flash)
+- `<html>` has `suppressHydrationWarning` to prevent React error from the script's DOM change
+- `lib/theme.ts` exports `useTheme()` hook — reads/writes `embar-theme` localStorage, updates state for toggle button display only (does NOT touch data-theme on init — anti-flash handles that)
+- `lib/theme.ts` exports `defaultCommunityTheme(channelName)` — deterministic hash pick from community themes
+
+**Channel page theme behaviour:**
+- Defaults to the channel's community theme on every visit
+- 3-option selector in Nav bar: ☀ Light | ☾ Dark | ◈ [Theme name]
+- Per-channel preference saved to localStorage as `embar-channel-theme-{channelId}`
+- Community preset ID saved to localStorage as `embar-channel-preset-{channelId}` — lets the anti-flash script apply the right theme instantly on repeat visits
+- On leaving a channel page, global theme is restored (cleanup effect in channel page)
 
 Community members get generated avatars (initials + colour) not uploaded photos in Phase 1.
+
+---
+
+## Key files and what they do
+
+| File | What it does |
+|---|---|
+| `app/page.tsx` | Home page |
+| `app/youtube/page.tsx` | YouTube channels listing — categories, search, channel cards with community accent colours |
+| `app/channel/[id]/page.tsx` | Individual channel page — community tab, videos tab, 3-way theme picker |
+| `app/video/[videoId]/page.tsx` | Individual video page — embed, description, community discussion placeholder |
+| `app/components/Nav.tsx` | Shared nav bar — auth modal, theme toggle (3-option on channel pages) |
+| `app/layout.tsx` | Root layout — anti-flash theme script, suppressHydrationWarning on html |
+| `app/globals.css` | All CSS variables and theme blocks |
+| `lib/theme.ts` | THEMES array, useTheme() hook, defaultCommunityTheme() function |
+| `lib/channels.ts` | Supabase read/write for channels table, Channel type |
+| `lib/auth.ts` | Sign up, sign in, sign out, getCurrentUsername |
+| `app/api/channel-feed/route.ts` | Fetches YouTube RSS feed, upserts videos to Supabase |
+| `app/api/resolve-channel/route.ts` | Scrapes YouTube page to get channel ID, name, thumbnail, subscriber count |
+| `app/api/search/route.ts` | Full-text search — calls search_channels_ranked and search_videos_ranked RPC functions |
+
+## Supabase database tables
+
+| Table | Columns |
+|---|---|
+| `channels` | id, youtube_channel_id, name, description, thumbnail_url, youtube_url, added_by, created_at, category, subcategory, subscriber_count |
+| `videos` | id, video_id, channel_id, title, description, thumbnail_url, published_at, youtube_url, created_at |
+| `users` (auth) | Managed by Supabase Auth — username stored as display_name |
+
+## Supabase RPC functions (PostgreSQL full-text search)
+
+- `search_channels_ranked(query text)` — searches channel name, description, category, subcategory
+- `search_videos_ranked(query text)` — searches video title, description
 
 ---
 

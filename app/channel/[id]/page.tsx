@@ -75,6 +75,11 @@ export default function ChannelPage({ params }: { params: Promise<{ id: string }
       setChannel(ch);
       setLoading(false);
 
+      // Save the community preset ID so the anti-flash script can apply it
+      // on the next visit before React even loads (no theme flash).
+      const preset = defaultCommunityTheme(ch.name);
+      localStorage.setItem(`embar-channel-preset-${channelId}`, preset.id);
+
       // If the user has a saved theme preference for this channel, use it.
       // Otherwise default to the community theme.
       const saved = localStorage.getItem(`embar-channel-theme-${channelId}`);

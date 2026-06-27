@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { getChannels, addChannel, type Channel } from "@/lib/channels";
 import { getCurrentUsername } from "@/lib/auth";
+import { defaultCommunityTheme } from "@/lib/theme";
 import Nav from "@/app/components/Nav";
 
 // ─── Categories ────────────────────────────────────────────────────────────────
@@ -55,6 +56,8 @@ function ChannelCard({ ch, featured }: { ch: Channel; featured?: boolean }) {
   const thumb = ch.thumbnail_url;
   const initials = ch.name.slice(0, 2).toUpperCase();
   const colour = avatarColour(ch.name);
+  const communityTheme = defaultCommunityTheme(ch.name);
+  const accentColor = communityTheme.accent;
 
   return (
     <a
@@ -67,16 +70,24 @@ function ChannelCard({ ch, featured }: { ch: Channel; featured?: boolean }) {
         background: "var(--surface)",
         border: `1px solid ${hovered ? "var(--border-strong)" : "var(--border)"}`,
         borderRadius: 16,
-        padding: featured ? "22px" : "18px",
+        overflow: "hidden",
         cursor: "pointer",
         transition: "border-color .15s, box-shadow .15s, transform .15s",
         transform: hovered ? "translateY(-3px)" : "none",
-        boxShadow: hovered ? "0 8px 28px rgba(26,79,212,.09)" : "none",
+        boxShadow: hovered ? `0 8px 28px ${accentColor}22` : "none",
         height: "100%",
         boxSizing: "border-box" as const,
         display: "flex",
         flexDirection: "column" as const,
       }}>
+        {/* Community colour strip */}
+        <div style={{
+          height: 4,
+          background: accentColor,
+          opacity: hovered ? 1 : 0.7,
+          transition: "opacity .15s",
+        }} />
+        <div style={{ padding: featured ? "18px 22px 22px" : "14px 18px 18px", display: "flex", flexDirection: "column" as const, flex: 1 }}>
         {/* Top row: avatar + name + badge */}
         <div style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 12 }}>
           {thumb ? (
@@ -211,13 +222,14 @@ function ChannelCard({ ch, featured }: { ch: Channel; featured?: boolean }) {
             {ch.added_by && <span style={{ marginLeft: 4, opacity: 0.7 }}>by {ch.added_by}</span>}
           </div>
           <div style={{
-            fontSize: 11, fontWeight: 600, color: "var(--blue)",
+            fontSize: 11, fontWeight: 600, color: accentColor,
             opacity: hovered ? 1 : 0,
             transition: "opacity .15s",
           }}>
             Explore →
           </div>
         </div>
+        </div>{/* end inner padding wrapper */}
       </div>
     </a>
   );
