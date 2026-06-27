@@ -2,6 +2,8 @@
 
 This file is read by Claude Code at the start of every session. It contains everything needed to continue building Embar without re-explaining context.
 
+**Companion file:** `C:\Users\gabbe\Documents\Embar\embar-site-structure.md` — maps every page, feature, file, and database table on the site. Read this before making changes to understand where things live. Update it whenever new features are added.
+
 ---
 
 ## What Embar is
@@ -129,6 +131,48 @@ Every content page (YouTube channel, video, film, TV show) has a community wiki 
 - Community leaders have moderation powers on their community's pages
 
 **Phase placement:** Basic wiki (community-editable description + info) in Phase 1 for YouTube channels. Full wiki system with edit history, review queues, and trusted member tiers in Phase 2.
+
+---
+
+## Social structure (three tiers)
+
+This structure should be designed carefully before building. Do not rush into it.
+
+---
+
+### Individual
+The foundation of everything. A single person with their own Embar account.
+
+- Has their own profile page showing everything they've written — reviews, discussions, blogs
+- Follows YouTube channels and communities they care about
+- Can be followed by other users who enjoy their writing
+- Their content appears on their profile AND on the relevant channel/community pages
+- Completely independent — they don't need to be in a crew or community to participate
+- Think of them like a writer or contributor who exists across the whole platform
+
+---
+
+### Crew
+A small, tight-knit group — usually friends, a friend group, or a collective of people with overlapping tastes.
+
+- Can be **private** (invite only, content visible only to members) or **public** (anyone can see and request to join)
+- The key difference from a community: a crew is **not tied to one channel or topic** — a crew's interests span multiple communities. A crew of five friends might all love film essays, tech YouTube, AND horror, so they exist across all three communities together
+- Crews give smaller groups a shared space without forcing everyone into the same giant public community
+- A crew member is still also an individual — they keep their own profile and content
+- Crews can have their own internal feed showing activity across all the communities they follow together
+- The word "group" was deliberately avoided — "Crew" feels warmer and more personal
+
+---
+
+### Community
+The main focus and heart of Embar. This is where the majority of activity lives.
+
+- **One community per YouTube channel** (Phase 1). Not multiple communities per channel — each channel has exactly one community. The channel page and its community are the same place.
+- In Phase 2: one community per film, TV show, or genre
+- Communities are large and public — anyone can join and contribute
+- Each community has: a main flowing chat (Discord-like with branches), a content layer (reviews, discussions, blogs by members), a wiki (community-maintained information about the channel), and a sidebar navigator
+- Communities are built around shared passion for content — not around people. The content (the channel, the show) is the anchor
+- Designed to feel like the natural home for fans of that channel — warm, organised, and alive
 
 ---
 

@@ -237,18 +237,28 @@ export default function Home() {
 
         <div style={{ display: "flex", gap: 2, flex: 1 }}>
           {NAV_ITEMS.map((item) => (
-            <button key={item.id} style={{
-              fontSize: 13, color: item.id === "home" ? "var(--blue)" : "var(--text-muted)",
-              background: item.id === "home" ? "var(--blue-light)" : "none",
-              padding: "5px 14px",
-              borderRadius: "var(--radius-full)",
-              border: "none", cursor: "pointer",
-              fontFamily: "inherit",
-              fontWeight: item.id === "home" ? 500 : 400,
-              transition: "all .12s",
-            }}>
-              {item.label}
-            </button>
+            item.id === "youtube" ? (
+              <a key={item.id} href="/youtube" style={{
+                fontSize: 13, color: "var(--text-muted)",
+                background: "none",
+                padding: "5px 14px",
+                borderRadius: "var(--radius-full)",
+                textDecoration: "none",
+                fontWeight: 400,
+                transition: "all .12s",
+              }}>{item.label}</a>
+            ) : (
+              <button key={item.id} style={{
+                fontSize: 13, color: item.id === "home" ? "var(--blue)" : "var(--text-muted)",
+                background: item.id === "home" ? "var(--blue-light)" : "none",
+                padding: "5px 14px",
+                borderRadius: "var(--radius-full)",
+                border: "none", cursor: "pointer",
+                fontFamily: "inherit",
+                fontWeight: item.id === "home" ? 500 : 400,
+                transition: "all .12s",
+              }}>{item.label}</button>
+            )
           ))}
         </div>
 
