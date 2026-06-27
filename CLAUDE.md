@@ -53,7 +53,9 @@ No coding experience. Explain everything in plain English. No jargon without an 
 
 **Onboarding:** Single screen, all three threads together (what you love watching / how you feeling / what world to explore). Options within each thread to be expansive — designed together before building.
 
-**Post layout:** Post on left, replies on right. Hover enlarges card and shows preview. Click expands full post with additional options. Design to be done together before building.
+**Post layout:** Post on left, replies on right. Hover enlarges card and shows preview with extra info (no click needed). Click opens a dedicated full post page. Design to be done together before building.
+
+**Post card creativity:** Individual post cards (discussions, blogs, reviews) should eventually have unique visual designs chosen by the creator — different layouts, accent colours, textures. The feed should feel alive and slightly unpredictable, not a uniform grid of identical boxes. This is a Phase 1 enhancement to build once core features are stable.
 
 **Images in posts/blogs/threads:** Users CAN upload images. Auto-compressed client-side using browser-image-compression before upload. Max 1920px wide, ~80% quality, 10MB hard cap. Result: ~150-400KB per image. Profile pictures and community banners deferred to Phase 2.
 
