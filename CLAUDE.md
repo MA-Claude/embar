@@ -98,6 +98,40 @@ When a branch spins off from the main community chat, it gets a category:
 
 ---
 
+## User accounts — sign up approach
+
+Sign up requires only a username and password. Email is completely optional.
+
+**How it works technically:** Supabase requires an email internally, so we auto-generate a placeholder (username@embar.users) that the user never sees. To the user, they just have a username + password.
+
+**Email is optional and added later** — for account recovery, or to connect external apps (YouTube, Reddit, Discord). When added, it replaces the placeholder in Supabase.
+
+**Never ask for email during sign up.** Only surface it as an optional setting in their profile after they have an account.
+
+---
+
+## Wiki system (confirmed feature)
+
+Every content page (YouTube channel, video, film, TV show) has a community wiki section alongside reviews, discussions, and blogs. Community members collaboratively write and maintain it.
+
+**What a wiki page contains:**
+- Creator/film background and history
+- Content style and what to expect
+- Notable videos/episodes/moments
+- Community significance and history
+- For YouTube: fills the gap that APIs don't cover
+
+**Moderation safeguards:**
+- Full edit history — nothing permanently deleted, everything reversible
+- New users: edits go into review queue before going live
+- Trusted members (earned over time): can edit and approve directly
+- Flagging system: any member can flag a change, freezes that section pending review
+- Community leaders have moderation powers on their community's pages
+
+**Phase placement:** Basic wiki (community-editable description + info) in Phase 1 for YouTube channels. Full wiki system with edit history, review queues, and trusted member tiers in Phase 2.
+
+---
+
 ## Phase 1 build order
 
 1. ✅ Project setup (Next.js + GitHub + Vercel)

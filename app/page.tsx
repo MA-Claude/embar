@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { signUp, signIn, signOut, getCurrentUsername } from "@/lib/auth";
 
 const NAV_ITEMS = [
   { id: "home", label: "Home", icon: "⬡" },
@@ -137,6 +138,67 @@ export default function Home() {
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
   const [isDark, setIsDark] = useState(false);
 
+  // Auth state
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [authSuccess, setAuthSuccess] = useState("");
+
+  // Check if someone is already logged in when the page loads
+  useEffect(() => {
+    getCurrentUsername().then(setCurrentUser);
+  }, []);
+
+  function openModal(type: "join" | "signin") {
+    setModalType(type);
+    setModalOpen(true);
+    setUsername("");
+    setPassword("");
+    setAuthError("");
+    setAuthSuccess("");
+  }
+
+  async function handleSubmit() {
+    setAuthError("");
+    setAuthSuccess("");
+    if (!username.trim() || !password) {
+      setAuthError("Please fill in both fields");
+      return;
+    }
+    if (password.length < 8) {
+      setAuthError("Password must be at least 8 characters");
+      return;
+    }
+    setAuthLoading(true);
+    if (modalType === "join") {
+      const result = await signUp(username, password);
+      if (result.error) {
+        setAuthError(result.error);
+      } else {
+        setAuthSuccess(`Welcome to Embar, ${result.username}!`);
+        setCurrentUser(result.username ?? null);
+        setTimeout(() => setModalOpen(false), 1200);
+      }
+    } else {
+      const result = await signIn(username, password);
+      if (result.error) {
+        setAuthError(result.error);
+      } else {
+        const name = await getCurrentUsername();
+        setCurrentUser(name ?? username.trim());
+        setModalOpen(false);
+      }
+    }
+    setAuthLoading(false);
+  }
+
+  async function handleSignOut() {
+    await signOut();
+    setCurrentUser(null);
+  }
+
   const filteredCards = FEED_CARDS.filter((card) => {
     if (activeFilter === "All") return true;
     if (activeFilter === "YouTube") return card.isGem || card.community?.includes("YouTube") || card.community?.includes("film essay") || card.community?.includes("Tech");
@@ -220,17 +282,43 @@ export default function Home() {
             </svg>
             Search Embar...
           </div>
-          <button onClick={() => { setModalType("signin"); setModalOpen(true); }} style={{
-            fontSize: 13, color: "var(--text-mid)", border: "1px solid var(--border)",
-            background: "var(--surface)", borderRadius: "var(--radius-full)",
-            padding: "6px 16px", cursor: "pointer", fontFamily: "inherit",
-          }}>Sign in</button>
-          <button onClick={() => { setModalType("join"); setModalOpen(true); }} style={{
-            background: "var(--blue)", color: "white", border: "none",
-            borderRadius: "var(--radius-full)", padding: "7px 18px",
-            fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-            letterSpacing: "-0.01em",
-          }}>Join free</button>
+          {currentUser ? (
+            <>
+              <div style={{
+                display: "flex", alignItems: "center", gap: 7,
+                fontSize: 13, color: "var(--text-mid)", fontWeight: 500,
+              }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: "50%",
+                  background: "var(--accent)", color: "white",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 11, fontWeight: 700,
+                }}>
+                  {currentUser[0].toUpperCase()}
+                </div>
+                {currentUser}
+              </div>
+              <button onClick={handleSignOut} style={{
+                fontSize: 13, color: "var(--text-muted)", border: "1px solid var(--border)",
+                background: "var(--surface)", borderRadius: "var(--radius-full)",
+                padding: "6px 16px", cursor: "pointer", fontFamily: "inherit",
+              }}>Sign out</button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => openModal("signin")} style={{
+                fontSize: 13, color: "var(--text-mid)", border: "1px solid var(--border)",
+                background: "var(--surface)", borderRadius: "var(--radius-full)",
+                padding: "6px 16px", cursor: "pointer", fontFamily: "inherit",
+              }}>Sign in</button>
+              <button onClick={() => openModal("join")} style={{
+                background: "var(--blue)", color: "white", border: "none",
+                borderRadius: "var(--radius-full)", padding: "7px 18px",
+                fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                letterSpacing: "-0.01em",
+              }}>Sign up</button>
+            </>
+          )}
         </div>
       </nav>
 
@@ -408,34 +496,61 @@ export default function Home() {
             marginBottom: 22,
             textAlign: "center",
           }}>
-            <div style={{
-              width: 44, height: 44, borderRadius: "50%",
-              background: "#1A2340",
-              border: "2px solid #2A3860",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              margin: "0 auto 10px",
-            }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5070B0" strokeWidth="1.5">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "white", marginBottom: 3 }}>Your profile</div>
-            <div style={{ fontSize: 11, color: "#6070A8", marginBottom: 14, lineHeight: 1.5 }}>
-              Join to see your communities, channels, and saved threads here
-            </div>
-            <div style={{ display: "flex", gap: 6 }}>
-              <button onClick={() => { setModalType("join"); setModalOpen(true); }} style={{
-                flex: 1, padding: "8px", background: "var(--blue)", color: "white",
-                border: "none", borderRadius: "var(--radius)", fontSize: 12,
-                fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-              }}>Join free</button>
-              <button onClick={() => { setModalType("signin"); setModalOpen(true); }} style={{
-                flex: 1, padding: "8px", background: "transparent", color: "#8090C0",
-                border: "1px solid #2A3860", borderRadius: "var(--radius)",
-                fontSize: 12, cursor: "pointer", fontFamily: "inherit",
-              }}>Sign in</button>
-            </div>
+            {currentUser ? (
+              <>
+                <div style={{
+                  width: 44, height: 44, borderRadius: "50%",
+                  background: "var(--blue)", color: "white",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 18, fontWeight: 700,
+                  margin: "0 auto 10px",
+                }}>
+                  {currentUser[0].toUpperCase()}
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "white", marginBottom: 3 }}>
+                  {currentUser}
+                </div>
+                <div style={{ fontSize: 11, color: "#6070A8", marginBottom: 14 }}>
+                  Welcome to Embar
+                </div>
+                <button onClick={handleSignOut} style={{
+                  width: "100%", padding: "8px", background: "transparent", color: "#8090C0",
+                  border: "1px solid #2A3860", borderRadius: "var(--radius)",
+                  fontSize: 12, cursor: "pointer", fontFamily: "inherit",
+                }}>Sign out</button>
+              </>
+            ) : (
+              <>
+                <div style={{
+                  width: 44, height: 44, borderRadius: "50%",
+                  background: "#1A2340",
+                  border: "2px solid #2A3860",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  margin: "0 auto 10px",
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5070B0" strokeWidth="1.5">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "white", marginBottom: 3 }}>Your profile</div>
+                <div style={{ fontSize: 11, color: "#6070A8", marginBottom: 14, lineHeight: 1.5 }}>
+                  Join to see your communities, channels, and saved threads here
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button onClick={() => openModal("join")} style={{
+                    flex: 1, padding: "8px", background: "var(--blue)", color: "white",
+                    border: "none", borderRadius: "var(--radius)", fontSize: 12,
+                    fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                  }}>Sign up</button>
+                  <button onClick={() => openModal("signin")} style={{
+                    flex: 1, padding: "8px", background: "transparent", color: "#8090C0",
+                    border: "1px solid #2A3860", borderRadius: "var(--radius)",
+                    fontSize: 12, cursor: "pointer", fontFamily: "inherit",
+                  }}>Sign in</button>
+                </div>
+              </>
+            )}
           </div>
 
           {/* YOUR COMMUNITIES */}
@@ -542,40 +657,110 @@ export default function Home() {
             </div>
             <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 22, lineHeight: 1.6 }}>
               {modalType === "join"
-                ? "Free forever. Browse everything without an account — join when you're ready to be part of the conversation."
+                ? "Free forever. No email needed — just a username and password."
                 : "Sign in to see your communities, followed channels, and personal feed."}
             </div>
-            {modalType === "join" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
-                {[
-                  { i: "💬", b: "#EBF0FC", t: "Write reviews, discussions, and blog posts" },
-                  { i: "⬡", b: "#F0EEFF", t: "Create or join communities around any YouTube channel" },
-                  { i: "▶", b: "#E1F5EE", t: "Watch videos inside Embar with community discussion alongside" },
-                  { i: "✦", b: "#FFF9EC", t: "Discover hidden gems the algorithm would never surface" },
-                ].map((item, i) => (
-                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 13, color: "var(--text-mid)", lineHeight: 1.45 }}>
-                    <div style={{ width: 26, height: 26, borderRadius: 7, background: item.b, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>{item.i}</div>
-                    {item.t}
+
+            {/* FORM FIELDS */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 500, color: "var(--text-mid)", display: "block", marginBottom: 5 }}>
+                  Username
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. stellajoy"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
+                  style={{
+                    width: "100%", padding: "10px 14px",
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--radius-md)",
+                    background: "var(--bg)", color: "var(--text)",
+                    fontSize: 14, fontFamily: "inherit",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+                {modalType === "join" && (
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
+                    Letters, numbers, and underscores only. 3–30 characters.
                   </div>
-                ))}
+                )}
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 500, color: "var(--text-mid)", display: "block", marginBottom: 5 }}>
+                  Password
+                </label>
+                <input
+                  type="password"
+                  placeholder={modalType === "join" ? "At least 8 characters" : "Your password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
+                  style={{
+                    width: "100%", padding: "10px 14px",
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--radius-md)",
+                    background: "var(--bg)", color: "var(--text)",
+                    fontSize: 14, fontFamily: "inherit",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* ERROR / SUCCESS MESSAGES */}
+            {authError && (
+              <div style={{
+                background: "#FFF0EE", border: "1px solid #F5C0B8",
+                borderRadius: "var(--radius)", padding: "9px 13px",
+                fontSize: 13, color: "#C03020", marginBottom: 14,
+              }}>
+                {authError}
               </div>
             )}
-            <button style={{
-              width: "100%", padding: "11px", borderRadius: "var(--radius-md)",
-              background: "var(--blue)", color: "white", border: "none",
-              fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-              letterSpacing: "-0.01em",
-            }}>
-              {modalType === "join" ? "Sign up free" : "Sign in"}
+            {authSuccess && (
+              <div style={{
+                background: "#EDFBF3", border: "1px solid #B0E8CC",
+                borderRadius: "var(--radius)", padding: "9px 13px",
+                fontSize: 13, color: "#0F6E56", marginBottom: 14,
+              }}>
+                {authSuccess}
+              </div>
+            )}
+
+            <button
+              onClick={handleSubmit}
+              disabled={authLoading}
+              style={{
+                width: "100%", padding: "11px", borderRadius: "var(--radius-md)",
+                background: authLoading ? "var(--muted)" : "var(--blue)",
+                color: "white", border: "none",
+                fontSize: 14, fontWeight: 600, cursor: authLoading ? "default" : "pointer",
+                fontFamily: "inherit", letterSpacing: "-0.01em",
+                transition: "background .15s",
+              }}>
+              {authLoading ? "Please wait..." : modalType === "join" ? "Create account" : "Sign in"}
             </button>
-            {modalType === "join" && (
-              <div style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: "var(--text-muted)" }}>
-                Already have an account?{" "}
-                <button onClick={() => setModalType("signin")} style={{ background: "none", border: "none", color: "var(--blue)", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>
-                  Sign in
-                </button>
-              </div>
-            )}
+
+            <div style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: "var(--text-muted)" }}>
+              {modalType === "join" ? (
+                <>Already have an account?{" "}
+                  <button onClick={() => openModal("signin")} style={{ background: "none", border: "none", color: "var(--blue)", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>
+                    Sign in
+                  </button>
+                </>
+              ) : (
+                <>New to Embar?{" "}
+                  <button onClick={() => openModal("join")} style={{ background: "none", border: "none", color: "var(--blue)", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>
+                    Sign up
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
