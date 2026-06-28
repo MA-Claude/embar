@@ -103,6 +103,8 @@ function IcoH2() { return <svg width="16" height="13" viewBox="0 0 20 16" fill="
 function IcoQuote() { return <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3h4v5H4.5C4.5 9 5 10 7 10v2C4 12 3 10 3 8V3zm7 0h4v5h-2.5C11.5 9 12 10 14 10v2c-3 0-4-2-4-4V3z"/></svg>; }
 function IcoList() { return <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="3" width="2" height="2"/><rect x="4" y="3.5" width="11" height="1"/><rect x="1" y="7" width="2" height="2"/><rect x="4" y="7.5" width="11" height="1"/><rect x="1" y="11" width="2" height="2"/><rect x="4" y="11.5" width="11" height="1"/></svg>; }
 function IcoImg() { return <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="1" y="2" width="14" height="12" rx="1.5"/><circle cx="5.5" cy="6" r="1.5"/><path d="M1 11l4-3 3 3 2-2 5 4"/></svg>; }
+function IcoLight(col="currentColor") { return <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={col} strokeWidth="1.5" strokeLinecap="round"><circle cx="8" cy="6.5" r="3"/><path d="M6.5 12h3M7 9.5v.5M7.5 13.5h1"/><path d="M5.5 9.5c-.8-.8-1-1.5-1-3a3.5 3.5 0 0 1 7 0c0 1.5-.2 2.2-1 3"/></svg>; }
+function IcoHeart(col="#C46B8A") { return <svg width="13" height="13" viewBox="0 0 16 16" fill={col} stroke="none"><path d="M8 13C8 13 2.5 9.2 2.5 5.5a3 3 0 0 1 5.5-1.6A3 3 0 0 1 13.5 5.5C13.5 9.2 8 13 8 13z"/></svg>; }
 
 const SIDEBAR_ITEMS: { id: CommSection; label: string; ico: (c: string) => React.ReactElement }[] = [
   { id:"stream",    label:"Stream",     ico: IcoStream },
@@ -613,10 +615,62 @@ export default function ChannelPage({ params }: { params: Promise<{ id: string }
                     <span style={{ fontFamily:F.syne, fontSize:16, fontWeight:700, color:"var(--text)", letterSpacing:"-.025em" }}>Forums</span>
                     <span style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)" }}>{posts.filter(p=>p.type==="forum").length} topics · {Object.values(replyCounts).reduce((a,b)=>a+b,0)} replies</span>
                   </div>
-                  {currentUser && (
+                  {currentUser && !forumOpen && (
                     <button onClick={() => setForumOpen(true)} style={{ fontFamily:F.body, fontSize:12, fontWeight:600, padding:"7px 15px", borderRadius:8, border:"none", background:A, color:"var(--text)", cursor:"pointer" }}>+ New Topic</button>
                   )}
                 </div>
+
+                {/* Inline forum composer */}
+                {forumOpen && (
+                  <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12, overflow:"hidden", marginBottom:16 }}>
+                    {/* Status badges + close */}
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px", borderBottom:"1px solid var(--border)", background:"var(--bg)" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        <span style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)", marginRight:2 }}>Status:</span>
+                        {FORUM_STATUSES.filter(s => !["hot","pinned","answered"].includes(s.id)).map(s => (
+                          <button key={s.id} onClick={() => setFStatus(s.id)} style={{
+                            fontFamily:F.body, fontSize:10, fontWeight:700, letterSpacing:".08em", textTransform:"uppercase",
+                            padding:"3px 11px", borderRadius:999, cursor:"pointer",
+                            background: fStatus===s.id ? s.bg : "transparent",
+                            color: fStatus===s.id ? s.col : "var(--text-muted)",
+                            border: fStatus===s.id ? `1px solid ${s.bd}` : "1px solid var(--border)",
+                          }}>{s.label}</button>
+                        ))}
+                      </div>
+                      <button onClick={() => setForumOpen(false)} style={{ background:"none", border:"none", fontSize:15, color:"var(--text-muted)", cursor:"pointer", lineHeight:1 }}>✕</button>
+                    </div>
+                    {/* Title input */}
+                    <div style={{ padding:"12px 16px 0" }}>
+                      <textarea value={fTitle} onChange={e=>setFTitle(e.target.value)} placeholder="What's this thread about?" autoFocus rows={2}
+                        style={{ width:"100%", background:"transparent", border:"none", outline:"none", resize:"none", fontFamily:F.syne, fontSize:17, fontWeight:700, color:"var(--text)", letterSpacing:"-.015em", lineHeight:1.3, boxSizing:"border-box" }} />
+                    </div>
+                    {/* Two-col body */}
+                    <div style={{ display:"flex", borderTop:"1px solid var(--border)", marginTop:10 }}>
+                      <div style={{ width:120, flexShrink:0, borderRight:"1px solid var(--border)", padding:"18px 12px", background:"var(--bg)", display:"flex", flexDirection:"column", alignItems:"center", gap:7 }}>
+                        <div style={{ width:42, height:42, borderRadius:"50%", background:"var(--surface2)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:F.syne, fontWeight:700, fontSize:15, color:"var(--text)" }}>
+                          {(currentUser ?? "T")[0].toUpperCase()}
+                        </div>
+                        <span style={{ fontFamily:F.body, fontSize:11, fontWeight:700, color:"var(--text)", textAlign:"center" }}>{currentUser ?? "testuser"}</span>
+                        <span style={{ fontFamily:F.body, fontSize:9, fontWeight:600, padding:"2px 8px", borderRadius:4, background:"var(--surface2)", color:"var(--text-muted)", letterSpacing:".06em" }}>Member</span>
+                        <div style={{ marginTop:4, textAlign:"center" }}>
+                          <div style={{ fontFamily:F.body, fontSize:9, color:"var(--text-muted)", lineHeight:1.6 }}>Posts</div>
+                          <div style={{ fontFamily:F.body, fontSize:11, fontWeight:700, color:"var(--text)" }}>0</div>
+                        </div>
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <RichEditor placeholder="Share your thoughts, question, or discussion…" onChange={setFBody} minHeight={160} />
+                      </div>
+                    </div>
+                    {/* Footer */}
+                    <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", borderTop:"1px solid var(--border)", background:"var(--bg)" }}>
+                      <span style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)", flexShrink:0 }}>#</span>
+                      <input value={fTags} onChange={e=>setFTags(e.target.value)} placeholder="tags, comma separated"
+                        style={{ flex:1, background:"transparent", border:"none", outline:"none", fontFamily:F.body, fontSize:12, color:"var(--text)" }} />
+                      <button onClick={() => setForumOpen(false)} style={{ fontFamily:F.body, fontSize:12, padding:"7px 14px", borderRadius:8, border:"1px solid var(--border)", background:"transparent", color:"var(--text-muted)", cursor:"pointer" }}>Cancel</button>
+                      <button onClick={postForum} disabled={!fTitle.trim()||!fBody.trim()||fPosting} style={{ fontFamily:F.body, fontSize:12, fontWeight:600, padding:"7px 18px", borderRadius:8, border:"none", background:fTitle.trim()&&fBody.trim()?A:"var(--surface2)", color:fTitle.trim()&&fBody.trim()?"var(--text)":"var(--text-muted)", cursor:fTitle.trim()&&fBody.trim()?"pointer":"default" }}>{fPosting?"Posting…":"Post"}</button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Search + sort */}
                 <div style={{ display:"flex", gap:8, marginBottom:11 }}>
@@ -656,10 +710,69 @@ export default function ChannelPage({ params }: { params: Promise<{ id: string }
                     <span style={{ fontFamily:F.syne, fontSize:16, fontWeight:700, color:"var(--text)", letterSpacing:"-.025em" }}>Reads</span>
                     <span style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)" }}>{posts.filter(p=>p.type==="read").length} essays · {new Set(posts.filter(p=>p.type==="read").map(p=>p.author)).size} authors</span>
                   </div>
-                  {currentUser && (
+                  {currentUser && !readOpen && (
                     <button onClick={() => setReadOpen(true)} style={{ fontFamily:F.body, fontSize:12, fontWeight:600, padding:"7px 15px", borderRadius:8, border:"none", background:CORAL, color:"#1A0A04", cursor:"pointer" }}>✎ Write a Read</button>
                   )}
                 </div>
+
+                {/* Inline read composer */}
+                {readOpen && (
+                  <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12, overflow:"hidden", marginBottom:16 }}>
+                    {/* Close */}
+                    <div style={{ display:"flex", justifyContent:"flex-end", padding:"9px 13px", borderBottom:"1px solid var(--border)", background:"var(--bg)" }}>
+                      <button onClick={() => setReadOpen(false)} style={{ background:"none", border:"none", fontSize:15, color:"var(--text-muted)", cursor:"pointer", lineHeight:1 }}>✕</button>
+                    </div>
+                    {/* Top area */}
+                    <div style={{ padding:"16px 20px 0" }}>
+                      {/* Cover image zone */}
+                      <div style={{ border:"1.5px dashed var(--border)", borderRadius:8, padding:"9px 14px", display:"flex", alignItems:"center", gap:8, marginBottom:12, cursor:"pointer", color:"var(--text-muted)", fontSize:12, fontFamily:F.body }}>
+                        <span>🖼</span><span>Add cover image</span><span style={{ opacity:.45, fontSize:10 }}>optional</span>
+                      </div>
+                      {/* Category pills */}
+                      <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:12 }}>
+                        {READ_CATEGORIES.map(c => (
+                          <button key={c.id} onClick={() => setRCategory(c.id)} style={{
+                            fontFamily:F.body, fontSize:9, fontWeight:800, letterSpacing:".1em", textTransform:"uppercase",
+                            padding:"3px 11px", borderRadius:999, cursor:"pointer",
+                            background: rCategory===c.id ? c.bg : "transparent",
+                            color: rCategory===c.id ? c.col : "var(--text-muted)",
+                            border: rCategory===c.id ? `1px solid ${c.bd}` : "1px solid var(--border)",
+                          }}>{c.label}</button>
+                        ))}
+                      </div>
+                      {/* Title */}
+                      <textarea value={rTitle} onChange={e=>setRTitle(e.target.value)} placeholder="Your title…" autoFocus rows={2}
+                        style={{ width:"100%", background:"transparent", border:"none", outline:"none", resize:"none", fontFamily:F.syne, fontSize:22, fontWeight:800, color:"var(--text)", letterSpacing:"-.025em", lineHeight:1.2, boxSizing:"border-box" }} />
+                      {/* Coral underline */}
+                      <div style={{ width:44, height:3, background:"var(--coral)", borderRadius:2, margin:"8px 0 14px" }} />
+                      {/* Author row */}
+                      <div style={{ display:"flex", alignItems:"center", gap:10, paddingBottom:14, borderBottom:"1px solid var(--border)" }}>
+                        <div style={{ width:30, height:30, borderRadius:"50%", background:"var(--surface2)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:F.syne, fontWeight:700, fontSize:12, color:"var(--text)", flexShrink:0 }}>
+                          {(currentUser ?? "T")[0].toUpperCase()}
+                        </div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                            <span style={{ fontFamily:F.body, fontSize:12, fontWeight:700, color:"var(--text)" }}>{currentUser ?? "testuser"}</span>
+                            <span style={{ fontFamily:F.body, fontSize:9, fontWeight:700, padding:"2px 7px", borderRadius:4, background:"rgba(212,132,90,.12)", color:"var(--coral)", border:"1px solid rgba(212,132,90,.25)", letterSpacing:".06em", flexShrink:0 }}>Contributor</span>
+                          </div>
+                          <div style={{ fontFamily:F.body, fontSize:10, color:"var(--text-muted)", marginTop:2 }}>0 reads published · 0 followers</div>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Body editor */}
+                    <div style={{ borderTop:"1px solid var(--border)" }}>
+                      <RichEditor placeholder="Write your essay, analysis, or personal piece…" onChange={setRBody} minHeight={200} />
+                    </div>
+                    {/* Footer */}
+                    <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", borderTop:"1px solid var(--border)", background:"var(--bg)" }}>
+                      <span style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)", flexShrink:0 }}>#</span>
+                      <input value={rTags} onChange={e=>setRTags(e.target.value)} placeholder="tags, comma separated"
+                        style={{ flex:1, background:"transparent", border:"none", outline:"none", fontFamily:F.body, fontSize:12, color:"var(--text)" }} />
+                      <button onClick={() => setReadOpen(false)} style={{ fontFamily:F.body, fontSize:12, padding:"7px 14px", borderRadius:8, border:"1px solid var(--border)", background:"transparent", color:"var(--text-muted)", cursor:"pointer" }}>Cancel</button>
+                      <button onClick={postRead} disabled={!rTitle.trim()||!rBody.trim()||rPosting} style={{ fontFamily:F.body, fontSize:12, fontWeight:600, padding:"7px 18px", borderRadius:8, border:"none", background:rTitle.trim()&&rBody.trim()?"var(--coral)":"var(--surface2)", color:rTitle.trim()&&rBody.trim()?"#1A0A04":"var(--text-muted)", cursor:rTitle.trim()&&rBody.trim()?"pointer":"default" }}>{rPosting?"Publishing…":"Post"}</button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Category filter chips — driven by READ_CATEGORIES */}
                 <div style={{ display:"flex", gap:6, marginBottom:16, flexWrap:"wrap" }}>
@@ -721,15 +834,32 @@ export default function ChannelPage({ params }: { params: Promise<{ id: string }
               </>
             )}
 
-            {/* THREAD VIEW */}
-            {openPost && (
+            {/* THREAD VIEW — routed by post type */}
+            {openPost && openPost.type === "forum" && (
+              <ForumThreadView
+                post={openPost} replies={replies} repliesLoading={repliesLoad}
+                replyBody={replyBody} setReplyBody={setReplyBody}
+                onReply={postReply} replyPosting={replyPosting}
+                currentUser={currentUser} A={A}
+                onBack={closeThread} channelName={channel?.name ?? ""}
+              />
+            )}
+            {openPost && openPost.type === "read" && (
+              <ReadArticleView
+                post={openPost} replies={replies} repliesLoading={repliesLoad}
+                replyBody={replyBody} setReplyBody={setReplyBody}
+                onReply={postReply} replyPosting={replyPosting}
+                currentUser={currentUser} A={A}
+                onBack={closeThread} channelName={channel?.name ?? ""}
+              />
+            )}
+            {openPost && openPost.type !== "forum" && openPost.type !== "read" && (
               <ThreadView
                 post={openPost} replies={replies} repliesLoading={repliesLoad}
                 replyBody={replyBody} setReplyBody={setReplyBody}
                 onReply={postReply} replyPosting={replyPosting}
                 currentUser={currentUser} A={A}
-                onBack={closeThread}
-                backLabel={openPost.type==="spark"?"← Back to Sparks":openPost.type==="forum"?"← Back to Forums":"← Back to Reads"}
+                onBack={closeThread} backLabel="← Back to Sparks"
               />
             )}
           </div>
@@ -785,77 +915,6 @@ export default function ChannelPage({ params }: { params: Promise<{ id: string }
         </div>
       )}
 
-      {/* ── FORUM MODAL ── */}
-      {forumOpen && (
-        <BigModal title="Start a Thread" onClose={() => setForumOpen(false)}>
-          <MField label="Title *" value={fTitle} onChange={setFTitle} placeholder="What's this thread about?" autoFocus />
-
-          {/* Status picker */}
-          <div>
-            <label style={{ fontFamily:F.body, fontSize:12, fontWeight:500, color:"var(--text-mid)", display:"block", marginBottom:8 }}>Thread type</label>
-            <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-              {FORUM_STATUSES.filter(s => !["hot","pinned","answered"].includes(s.id)).map(s => (
-                <button key={s.id} onClick={() => setFStatus(s.id)} style={{
-                  fontFamily:F.body, fontSize:11, fontWeight:fStatus===s.id?600:400,
-                  padding:"5px 14px", borderRadius:999, cursor:"pointer",
-                  background: fStatus===s.id ? s.bg : "transparent",
-                  color: fStatus===s.id ? s.col : "var(--text-muted)",
-                  border: fStatus===s.id ? `1px solid ${s.bd}` : "1px solid var(--border)",
-                }}>{s.label}</button>
-              ))}
-            </div>
-          </div>
-
-          {/* Rich editor */}
-          <div>
-            <label style={{ fontFamily:F.body, fontSize:12, fontWeight:500, color:"var(--text-mid)", display:"block", marginBottom:8 }}>Body *</label>
-            <RichEditor placeholder="Share your thoughts, question, or discussion…" onChange={setFBody} minHeight={180} />
-          </div>
-
-          <MField label="Tags (optional)" value={fTags} onChange={setFTags} placeholder="philosophy, sources, science (comma-separated)" />
-
-          <div style={{ display:"flex", gap:8, marginTop:4 }}>
-            <button onClick={() => setForumOpen(false)} style={{ fontFamily:F.body, fontSize:13, padding:"10px 18px", borderRadius:9, border:"1px solid var(--border)", background:"var(--surface2)", color:"var(--text-muted)", cursor:"pointer" }}>Cancel</button>
-            <button onClick={postForum} disabled={!fTitle.trim()||!fBody.trim()||fPosting} style={{ flex:1, fontFamily:F.body, fontSize:13, fontWeight:600, padding:10, borderRadius:9, border:"none", background:fTitle.trim()&&fBody.trim()?A:"var(--surface2)", color:fTitle.trim()&&fBody.trim()?"var(--text)":"var(--text-muted)", cursor:fTitle.trim()&&fBody.trim()?"pointer":"default" }}>{fPosting?"Posting…":"Post Thread"}</button>
-          </div>
-        </BigModal>
-      )}
-
-      {/* ── READ MODAL ── */}
-      {readOpen && (
-        <BigModal title="Write a Read" onClose={() => setReadOpen(false)}>
-          <MField label="Title *" value={rTitle} onChange={setRTitle} placeholder="Your essay title" autoFocus />
-
-          {/* Category picker */}
-          <div>
-            <label style={{ fontFamily:F.body, fontSize:12, fontWeight:500, color:"var(--text-mid)", display:"block", marginBottom:8 }}>Category</label>
-            <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-              {READ_CATEGORIES.map(c => (
-                <button key={c.id} onClick={() => setRCategory(c.id)} style={{
-                  fontFamily:F.body, fontSize:11, fontWeight:rCategory===c.id?600:400,
-                  padding:"5px 14px", borderRadius:999, cursor:"pointer",
-                  background: rCategory===c.id ? c.bg : "transparent",
-                  color: rCategory===c.id ? c.col : "var(--text-muted)",
-                  border: rCategory===c.id ? `1px solid ${c.bd}` : "1px solid var(--border)",
-                }}>{c.label}</button>
-              ))}
-            </div>
-          </div>
-
-          {/* Rich editor */}
-          <div>
-            <label style={{ fontFamily:F.body, fontSize:12, fontWeight:500, color:"var(--text-mid)", display:"block", marginBottom:8 }}>Body *</label>
-            <RichEditor placeholder="Write your essay, analysis, or personal piece…" onChange={setRBody} minHeight={240} />
-          </div>
-
-          <MField label="Tags (optional)" value={rTags} onChange={setRTags} placeholder="animation, philosophy, media (comma-separated)" />
-
-          <div style={{ display:"flex", gap:8, marginTop:4 }}>
-            <button onClick={() => setReadOpen(false)} style={{ fontFamily:F.body, fontSize:13, padding:"10px 18px", borderRadius:9, border:"1px solid var(--border)", background:"var(--surface2)", color:"var(--text-muted)", cursor:"pointer" }}>Cancel</button>
-            <button onClick={postRead} disabled={!rTitle.trim()||!rBody.trim()||rPosting} style={{ flex:1, fontFamily:F.body, fontSize:13, fontWeight:600, padding:10, borderRadius:9, border:"none", background:rTitle.trim()&&rBody.trim()?"var(--coral)":"var(--surface2)", color:rTitle.trim()&&rBody.trim()?"#1A0A04":"var(--text-muted)", cursor:rTitle.trim()&&rBody.trim()?"pointer":"default" }}>{rPosting?"Publishing…":"Publish Read"}</button>
-          </div>
-        </BigModal>
-      )}
     </div>
   );
 }
@@ -1076,7 +1135,293 @@ function ReadCard({ post, replyCount, onClick }: { post:CommPost; replyCount:num
   );
 }
 
-// ── Thread view ────────────────────────────────────────────────────────────────
+// ── Forum thread view ─────────────────────────────────────────────────────────
+function ForumThreadView({ post, replies, repliesLoading, replyBody, setReplyBody, onReply, replyPosting, currentUser, A, onBack, channelName }: {
+  post:CommPost; replies:CommPost[]; repliesLoading:boolean;
+  replyBody:string; setReplyBody:(v:string)=>void;
+  onReply:()=>void; replyPosting:boolean;
+  currentUser:string|null; A:string; onBack:()=>void; channelName:string;
+}) {
+  const statusId = getForumStatus(post);
+  const s = statusMeta(statusId);
+  const visibleTags = getVisibleTags(post);
+  const [reacts, setReacts] = useState<Record<string,{w:number;l:number;h:number;c:number}>>({});
+  const [myReacts, setMyReacts] = useState<Record<string,Set<string>>>({});
+
+  function toggleReact(postId:string, key:string) {
+    const mySet = myReacts[postId] ?? new Set<string>();
+    const had = mySet.has(key);
+    const next = new Set(mySet); if (had) next.delete(key); else next.add(key);
+    setMyReacts(p => ({...p,[postId]:next}));
+    setReacts(p => {
+      const cur = p[postId] ?? {w:0,l:0,h:0,c:0};
+      return {...p,[postId]:{...cur,[key]:(cur as Record<string,number>)[key]+(had?-1:1)}};
+    });
+  }
+  function rCount(postId:string, key:string) { return (reacts[postId] as Record<string,number> ?? {})[key] ?? 0; }
+
+  function ReactRow({ postId, showChat=true }: { postId:string; showChat?:boolean }) {
+    const RXNS: { k:string; ico:React.ReactNode; col:string; label:string }[] = [
+      { k:"w", ico:<IcoFlame/>, col:"var(--coral)", label:" warmth" },
+      { k:"l", ico:IcoLight("#D4A838"), col:"#D4A838", label:"" },
+      { k:"h", ico:IcoHeart(), col:"#C46B8A", label:"" },
+      ...(showChat ? [{ k:"c", ico:IcoReplyBubble("var(--text-muted)"), col:"var(--text-muted)", label:"" }] : []),
+    ];
+    return (
+      <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+        {RXNS.map(r => {
+          const active = myReacts[postId]?.has(r.k);
+          return (
+            <button key={r.k} onClick={()=>toggleReact(postId,r.k)} style={{ display:"flex", alignItems:"center", gap:4, padding:"3px 9px", borderRadius:999, background:active?"rgba(255,255,255,.06)":"transparent", border:`1px solid ${active?"rgba(255,255,255,.18)":"var(--border)"}`, cursor:"pointer", transition:"all .1s" }}>
+              {r.ico}
+              <span style={{ fontFamily:F.body, fontSize:11, fontWeight:600, color:active?r.col:"var(--text-muted)" }}>{rCount(postId,r.k)}{r.label}</span>
+            </button>
+          );
+        })}
+        {showChat && <button style={{ display:"flex", alignItems:"center", gap:4, padding:"3px 9px", borderRadius:999, background:"transparent", border:"1px solid var(--border)", cursor:"pointer", fontFamily:F.body, fontSize:11, color:"var(--text-muted)" }}>+ React</button>}
+      </div>
+    );
+  }
+
+  function AuthorCol({ name }: { name:string }) {
+    return (
+      <div style={{ width:136, flexShrink:0, background:"rgba(0,0,0,.18)", borderRight:"1px solid var(--border)", padding:"16px 12px", display:"flex", flexDirection:"column", alignItems:"center", textAlign:"center" }}>
+        <Av name={name} size={38} />
+        <div style={{ fontFamily:F.body, fontSize:12, fontWeight:600, color:"var(--text)", marginTop:8, marginBottom:5 }}>{name}</div>
+        <span style={{ fontFamily:F.body, fontSize:"8.5px", fontWeight:600, padding:"2px 7px", borderRadius:999, background:"rgba(106,144,112,.1)", color:"#6A9070", border:"1px solid rgba(106,144,112,.18)" }}>Member</span>
+        <div style={{ marginTop:10, fontFamily:F.body, fontSize:9.5, color:"var(--text-muted)", lineHeight:1.8 }}>
+          Posts<br/><span style={{ color:"var(--text-mid)", fontWeight:600 }}>0</span>
+        </div>
+      </div>
+    );
+  }
+
+  function fmtDate(d:string) {
+    const dt = new Date(d);
+    return `${dt.toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"})} · ${dt.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}`;
+  }
+
+  return (
+    <div>
+      {/* Breadcrumb */}
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:18, fontFamily:F.body, fontSize:12, color:"var(--text-muted)" }}>
+        <button onClick={onBack} style={{ color:"var(--text-muted)", background:"none", border:"none", cursor:"pointer", fontFamily:F.body, fontSize:12, padding:0 }}>Forums</button>
+        <span style={{ opacity:.5 }}>›</span>
+        <span style={{ color:"var(--text-mid)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:500 }}>{post.title}</span>
+      </div>
+
+      {/* Status badges */}
+      <div style={{ display:"flex", gap:6, marginBottom:11 }}>
+        <span style={{ fontFamily:F.syne, fontSize:"8.5px", fontWeight:700, padding:"2px 9px", borderRadius:999, background:s.bg, color:s.col, border:`1px solid ${s.bd}`, textTransform:"uppercase", letterSpacing:".1em" }}>{s.label.replace("✔ ","").replace("✦ ","")}</span>
+        {statusId !== "open" && <span style={{ fontFamily:F.syne, fontSize:"8.5px", fontWeight:700, padding:"2px 9px", borderRadius:999, background:statusMeta("open").bg, color:statusMeta("open").col, border:`1px solid ${statusMeta("open").bd}`, textTransform:"uppercase", letterSpacing:".1em" }}>Open</span>}
+      </div>
+
+      {/* Title */}
+      <div style={{ fontFamily:F.syne, fontSize:22, fontWeight:700, color:"var(--text)", lineHeight:1.3, letterSpacing:"-.025em", marginBottom:11 }}>{post.title}</div>
+
+      {/* Meta */}
+      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:18, flexWrap:"wrap" }}>
+        <span style={{ fontFamily:F.body, fontSize:12, color:"var(--text-muted)" }}>{replies.length} {replies.length===1?"reply":"replies"} · 0 views</span>
+        {visibleTags.map(tg => <TagPill key={tg} tag={tg} />)}
+      </div>
+
+      {/* Original post card */}
+      <div style={{ background:"var(--surface)", border:"1px solid var(--border-strong)", borderRadius:10, overflow:"hidden", marginBottom:18 }}>
+        <div style={{ display:"flex" }}>
+          <AuthorCol name={post.author} />
+          <div style={{ flex:1, padding:"14px 18px 16px", display:"flex", flexDirection:"column" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:13 }}>
+              <span style={{ fontFamily:F.syne, fontSize:"8.5px", fontWeight:700, letterSpacing:".13em", textTransform:"uppercase", color:"var(--text-muted)" }}>Original Post</span>
+              <span style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)" }}>{fmtDate(post.created_at)}</span>
+            </div>
+            <div style={{ fontFamily:F.body, fontSize:13.5, color:"var(--text-mid)", lineHeight:1.78, flex:1, marginBottom:16 }} dangerouslySetInnerHTML={{__html: post.body}} />
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", paddingTop:12, borderTop:"1px solid var(--border)" }}>
+              <ReactRow postId={post.id} showChat />
+              <button style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 14px", borderRadius:999, background:A, border:"none", cursor:"pointer", fontFamily:F.body, fontSize:11.5, fontWeight:600, color:"#0C1A0E" }}>↩ Reply</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Replies divider */}
+      <div style={{ display:"flex", alignItems:"center", gap:10, margin:"0 0 14px" }}>
+        <div style={{ flex:1, height:1, background:"var(--border)" }} />
+        <span style={{ fontFamily:F.syne, fontSize:"9px", fontWeight:700, letterSpacing:".14em", textTransform:"uppercase", color:"var(--text-muted)", whiteSpace:"nowrap" }}>{replies.length} Replies</span>
+        <div style={{ flex:1, height:1, background:"var(--border)" }} />
+      </div>
+
+      {/* Reply cards */}
+      {repliesLoading ? <Spin /> : replies.length === 0
+        ? <div style={{ textAlign:"center", padding:"28px 0", fontFamily:F.body, fontSize:13, color:"var(--text-muted)" }}>No replies yet — be the first.</div>
+        : replies.map((r, i) => (
+          <div key={r.id} style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:10, overflow:"hidden", marginBottom:10 }}>
+            <div style={{ display:"flex" }}>
+              <AuthorCol name={r.author} />
+              <div style={{ flex:1, padding:"12px 16px 14px" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:11 }}>
+                  <span style={{ fontFamily:F.syne, fontSize:"8.5px", fontWeight:700, letterSpacing:".12em", textTransform:"uppercase", color:"var(--text-muted)" }}>Reply #{i+1}</span>
+                  <span style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)" }}>{fmtDate(r.created_at)}</span>
+                </div>
+                <div style={{ fontFamily:F.body, fontSize:13, color:"var(--text-mid)", lineHeight:1.75, marginBottom:13 }} dangerouslySetInnerHTML={{__html: r.body}} />
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", paddingTop:10, borderTop:"1px solid var(--border)" }}>
+                  <ReactRow postId={r.id} showChat={false} />
+                  <button style={{ fontFamily:F.body, fontSize:11.5, color:"var(--text-muted)", background:"none", border:"none", cursor:"pointer", padding:0 }}>↩ Reply</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+
+      {/* Compose */}
+      <div style={{ marginTop:14 }}>
+        {currentUser ? (
+          <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:10, padding:"14px 16px" }}>
+            <div style={{ display:"flex", gap:10 }}>
+              <Av name={currentUser} size={28} />
+              <div style={{ flex:1 }}>
+                <textarea placeholder="Add to this thread…" value={replyBody} onChange={e=>setReplyBody(e.target.value.slice(0,5000))} rows={3}
+                  onKeyDown={e=>{if(e.key==="Enter"&&e.ctrlKey){e.preventDefault();onReply();}}}
+                  style={{ width:"100%", padding:"9px 13px", border:"1px solid var(--border)", borderRadius:8, background:"var(--bg)", color:"var(--text)", fontSize:13, fontFamily:F.body, outline:"none", resize:"none", boxSizing:"border-box", lineHeight:1.6 }} />
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:7 }}>
+                  <span style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)" }}>Ctrl+Enter to post</span>
+                  <button onClick={onReply} disabled={!replyBody.trim()||replyPosting} style={{ fontFamily:F.body, fontSize:12, fontWeight:600, padding:"7px 18px", borderRadius:7, border:"none", background:replyBody.trim()?A:"var(--surface2)", color:replyBody.trim()?"var(--text)":"var(--text-muted)", cursor:replyBody.trim()?"pointer":"default" }}>{replyPosting?"Posting…":"Post Reply"}</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:10, padding:"14px 16px", textAlign:"center", fontFamily:F.body, fontSize:13, color:"var(--text-muted)" }}>Sign in to reply</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Read article view ─────────────────────────────────────────────────────────
+function ReadArticleView({ post, replies, repliesLoading, replyBody, setReplyBody, onReply, replyPosting, currentUser, A, onBack, channelName }: {
+  post:CommPost; replies:CommPost[]; repliesLoading:boolean;
+  replyBody:string; setReplyBody:(v:string)=>void;
+  onReply:()=>void; replyPosting:boolean;
+  currentUser:string|null; A:string; onBack:()=>void; channelName:string;
+}) {
+  const catId = getReadCategory(post);
+  const cat = categoryMeta(catId);
+  const mins = readMinutes(post.body);
+  const visibleTags = getVisibleTags(post);
+  const dateStr = new Date(post.created_at).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
+
+  return (
+    <div>
+      {/* Breadcrumb + back */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:22 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:6, fontFamily:F.body, fontSize:12, color:"var(--text-muted)" }}>
+          <span>{channelName}</span>
+          <span style={{ opacity:.5 }}>›</span>
+          <button onClick={onBack} style={{ color:"var(--coral)", background:"none", border:"none", cursor:"pointer", fontFamily:F.body, fontSize:12, padding:0 }}>Reads</button>
+          <span style={{ opacity:.5 }}>›</span>
+          <span style={{ color:"var(--text-mid)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:340 }}>{post.title}</span>
+        </div>
+        <button onClick={onBack} style={{ fontFamily:F.body, fontSize:12, color:"var(--text-muted)", background:"none", border:"none", cursor:"pointer", padding:0 }}>← Back to Reads</button>
+      </div>
+
+      <div style={{ maxWidth:740, margin:"0 auto" }}>
+        {/* Cover image zone */}
+        <div style={{ border:"1.5px dashed rgba(255,255,255,.1)", borderRadius:10, padding:"16px 20px", marginBottom:24, display:"flex", alignItems:"center", gap:9, cursor:"pointer", background:"rgba(255,255,255,.02)" }}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--text-muted)" strokeWidth="1.4" strokeLinecap="round"><rect x="1" y="2" width="14" height="12" rx="1.5"/><circle cx="5.5" cy="6" r="1.5"/><path d="M1 11l4-3 3 3 2-2 5 4"/></svg>
+          <span style={{ fontFamily:F.body, fontSize:12.5, color:"var(--text-muted)" }}>Add cover image</span>
+          <span style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)", opacity:.55 }}>optional</span>
+        </div>
+
+        {/* Category · read time · date */}
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
+          <span style={{ fontFamily:F.syne, fontSize:"9px", fontWeight:700, padding:"2px 9px", borderRadius:999, background:cat.bg, color:cat.col, border:`1px solid ${cat.bd}`, textTransform:"uppercase", letterSpacing:".1em" }}>{cat.label}</span>
+          <span style={{ fontFamily:F.body, fontSize:12, color:"var(--text-muted)" }}>{mins} min read</span>
+          <span style={{ fontFamily:F.body, fontSize:12, color:"var(--text-muted)" }}>· {dateStr}</span>
+        </div>
+
+        {/* Title */}
+        <div style={{ fontFamily:F.syne, fontSize:28, fontWeight:700, color:"var(--text)", lineHeight:1.22, letterSpacing:"-.03em", marginBottom:13 }}>{post.title}</div>
+        {/* Terracotta underline */}
+        <div style={{ width:46, height:3, background:"var(--coral)", borderRadius:2, marginBottom:20 }} />
+
+        {/* Author block */}
+        <div style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 0", borderTop:"1px solid var(--border)", borderBottom:"1px solid var(--border)", marginBottom:30 }}>
+          <Av name={post.author} size={36} />
+          <div style={{ flex:1 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:4 }}>
+              <span style={{ fontFamily:F.body, fontSize:13, fontWeight:600, color:"var(--text)" }}>{post.author}</span>
+              <span style={{ fontFamily:F.body, fontSize:"8.5px", fontWeight:700, padding:"2px 8px", borderRadius:999, background:"rgba(212,132,90,.1)", color:"var(--coral)", border:"1px solid rgba(212,132,90,.22)" }}>Contributor</span>
+            </div>
+            <div style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)" }}>0 reads published · 0 warmth received</div>
+          </div>
+          <button style={{ fontFamily:F.body, fontSize:12, fontWeight:600, padding:"7px 18px", borderRadius:999, border:"1px solid var(--border-strong)", background:"transparent", color:"var(--text)", cursor:"pointer" }}>+ Follow</button>
+        </div>
+
+        {/* Article body */}
+        <div className="read-article" dangerouslySetInnerHTML={{__html: post.body}} />
+
+        {/* Tags */}
+        {visibleTags.length > 0 && (
+          <div style={{ display:"flex", gap:5, flexWrap:"wrap", margin:"26px 0 0" }}>
+            {visibleTags.map(tg => <TagPill key={tg} tag={tg} />)}
+          </div>
+        )}
+
+        {/* Responses */}
+        <div style={{ marginTop:44, borderTop:"1px solid var(--border)", paddingTop:28 }}>
+          <div style={{ fontFamily:F.syne, fontSize:15, fontWeight:700, color:"var(--text)", marginBottom:20 }}>
+            {replies.length} {replies.length===1?"Response":"Responses"}
+          </div>
+
+          {currentUser ? (
+            <div style={{ display:"flex", gap:10, marginBottom:24 }}>
+              <Av name={currentUser} size={30} />
+              <div style={{ flex:1 }}>
+                <textarea placeholder="Share your response…" value={replyBody} onChange={e=>setReplyBody(e.target.value.slice(0,5000))} rows={3}
+                  onKeyDown={e=>{if(e.key==="Enter"&&e.ctrlKey){e.preventDefault();onReply();}}}
+                  style={{ width:"100%", padding:"10px 14px", border:"1px solid var(--border)", borderRadius:9, background:"var(--bg)", color:"var(--text)", fontSize:13, fontFamily:F.body, outline:"none", resize:"none", boxSizing:"border-box", lineHeight:1.65 }} />
+                <div style={{ display:"flex", justifyContent:"flex-end", marginTop:7 }}>
+                  <button onClick={onReply} disabled={!replyBody.trim()||replyPosting} style={{ fontFamily:F.body, fontSize:12, fontWeight:600, padding:"7px 20px", borderRadius:7, border:"none", background:replyBody.trim()?"var(--coral)":"var(--surface2)", color:replyBody.trim()?"#1A0A04":"var(--text-muted)", cursor:replyBody.trim()?"pointer":"default" }}>{replyPosting?"Publishing…":"Respond"}</button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding:"14px 16px", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:10, textAlign:"center", fontFamily:F.body, fontSize:13, color:"var(--text-muted)", marginBottom:20 }}>Sign in to respond</div>
+          )}
+
+          {repliesLoading ? <Spin /> : replies.map((r, i) => (
+            <div key={r.id} style={{ display:"flex", gap:12, padding:"18px 0", borderBottom: i < replies.length-1 ? "1px solid var(--border)" : "none" }}>
+              <Av name={r.author} size={28} />
+              <div style={{ flex:1 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:9 }}>
+                  <span style={{ fontFamily:F.body, fontSize:13, fontWeight:600, color:"var(--text)" }}>{r.author}</span>
+                  <span style={{ fontFamily:F.body, fontSize:"8.5px", fontWeight:600, padding:"2px 7px", borderRadius:999, background:"rgba(106,144,112,.1)", color:"#6A9070", border:"1px solid rgba(106,144,112,.18)" }}>Member</span>
+                  <span style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)", marginLeft:"auto" }}>{timeAgo(r.created_at)}</span>
+                </div>
+                <div style={{ fontFamily:F.body, fontSize:13, color:"var(--text-mid)", lineHeight:1.75 }} dangerouslySetInnerHTML={{__html: r.body}} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <style>{`
+        .read-article { font-family: ${F.body}; font-size: 14px; color: var(--text-mid); line-height: 1.85; }
+        .read-article h2 { font-family: ${F.syne}; font-size: 18px; font-weight: 700; color: var(--text); margin: 24px 0 8px; letter-spacing: -.02em; }
+        .read-article p { margin: 0 0 16px; }
+        .read-article blockquote { border-left: 3px solid var(--coral); padding: 12px 18px; margin: 20px 0; color: var(--coral); font-style: italic; background: rgba(212,132,90,.06); border-radius: 0 8px 8px 0; }
+        .read-article a { color: var(--coral); text-decoration: none; }
+        .read-article a:hover { text-decoration: underline; }
+        .read-article strong { color: var(--text); }
+        .read-article ul { padding-left: 22px; margin: 8px 0 16px; }
+        .read-article li { margin-bottom: 5px; }
+        .read-article img { max-width: 100%; border-radius: 10px; margin: 14px 0; }
+      `}</style>
+    </div>
+  );
+}
+
+// ── Spark thread view (generic, for sparks) ───────────────────────────────────
 function ThreadView({ post, replies, repliesLoading, replyBody, setReplyBody, onReply, replyPosting, currentUser, A, onBack, backLabel }: {
   post:CommPost; replies:CommPost[]; repliesLoading:boolean;
   replyBody:string; setReplyBody:(v:string)=>void;
@@ -1084,47 +1429,35 @@ function ThreadView({ post, replies, repliesLoading, replyBody, setReplyBody, on
   currentUser:string|null; A:string;
   onBack:()=>void; backLabel:string;
 }) {
-  const isRead = post.type === "read";
-  const mins = isRead ? readMinutes(post.body) : 0;
   const visibleTags = getVisibleTags(post);
-
   return (
     <div>
-      <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:14 }}>
+      <div style={{ marginBottom:14 }}>
         <button onClick={onBack} style={{ fontFamily:F.body, fontSize:12, color:"var(--text-muted)", border:"none", background:"transparent", cursor:"pointer", padding:0 }}>{backLabel}</button>
       </div>
-
       <div style={{ background:"var(--surface)", border:"1px solid var(--border-strong)", borderRadius:10, padding:"16px 18px", marginBottom:12 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:9 }}>
           <Av name={post.author} size={30} />
           <span style={{ fontFamily:F.body, fontSize:12.5, fontWeight:600, color:"var(--text-mid)" }}>{post.author}</span>
           <span style={{ fontFamily:F.body, fontSize:9, fontWeight:600, padding:"1px 7px", borderRadius:999, background:"rgba(42,122,58,.16)", color:"#4ABA5A", border:"1px solid rgba(42,122,58,.28)" }}>Member</span>
-          {isRead && <span style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)" }}>{mins} min read</span>}
-          <span style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)" }}>· {timeAgo(post.created_at)}</span>
-          <div style={{ marginLeft:"auto", display:"flex", gap:8 }}>
-            <button style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)", border:"none", background:"transparent", cursor:"pointer", padding:0 }}>Share</button>
-            <button style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)", border:"none", background:"transparent", cursor:"pointer", padding:0 }}>Bookmark</button>
-          </div>
+          <span style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)", marginLeft:"auto" }}>{timeAgo(post.created_at)}</span>
         </div>
-        {post.title && <div style={{ fontFamily:F.syne, fontSize:isRead?20:16.5, fontWeight:700, color:"var(--text)", lineHeight:1.35, marginBottom:10, letterSpacing:"-.02em" }}>{post.title}</div>}
-        <div style={{ fontFamily:F.body, fontSize:isRead?14:13, color:"var(--text-mid)", lineHeight:isRead?1.85:1.7, marginBottom:12 }} dangerouslySetInnerHTML={{__html: post.body}} />
+        {post.title && <div style={{ fontFamily:F.syne, fontSize:16.5, fontWeight:700, color:"var(--text)", lineHeight:1.35, marginBottom:10, letterSpacing:"-.02em" }}>{post.title}</div>}
+        <div style={{ fontFamily:F.body, fontSize:13, color:"var(--text-mid)", lineHeight:1.7, marginBottom:12 }} dangerouslySetInnerHTML={{__html: post.body}} />
         {visibleTags.length>0 && <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:12 }}>{visibleTags.map(tg=><TagPill key={tg} tag={tg}/>)}</div>}
         <div style={{ display:"flex", alignItems:"center", gap:14, borderTop:"1px solid var(--border)", paddingTop:11 }}>
           <div style={{ display:"flex", alignItems:"center", gap:4 }}><IcoFlame/><span style={{ fontFamily:F.body, fontSize:12, fontWeight:600, color:"var(--coral)" }}>0 warmth</span></div>
           <div style={{ display:"flex", alignItems:"center", gap:4 }}>{IcoReplyBubble("var(--text-muted)")}<span style={{ fontFamily:F.body, fontSize:12, color:"var(--text-muted)" }}>{replies.length} replies</span></div>
         </div>
       </div>
-
       {currentUser ? (
         <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:10, padding:"14px 16px", marginBottom:14 }}>
           <div style={{ display:"flex", gap:10 }}>
             <Av name={currentUser} size={28} />
             <div style={{ flex:1 }}>
-              <textarea placeholder="Add to this thread…" value={replyBody} onChange={e=>setReplyBody(e.target.value.slice(0,5000))} rows={2}
+              <textarea placeholder="Add to this spark…" value={replyBody} onChange={e=>setReplyBody(e.target.value.slice(0,5000))} rows={2}
                 onKeyDown={e=>{if(e.key==="Enter"&&e.ctrlKey){e.preventDefault();onReply();}}}
-                style={{ width:"100%", padding:"9px 13px", border:"1px solid var(--border)", borderRadius:8, background:"var(--bg)", color:"var(--text)", fontSize:13, fontFamily:F.body, outline:"none", resize:"none", boxSizing:"border-box", lineHeight:1.6 }}
-                onFocus={e=>{e.currentTarget.style.borderColor=A;}} onBlur={e=>{e.currentTarget.style.borderColor="var(--border)";}}
-              />
+                style={{ width:"100%", padding:"9px 13px", border:"1px solid var(--border)", borderRadius:8, background:"var(--bg)", color:"var(--text)", fontSize:13, fontFamily:F.body, outline:"none", resize:"none", boxSizing:"border-box", lineHeight:1.6 }} />
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:7 }}>
                 <span style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)" }}>Ctrl+Enter to post</span>
                 <button onClick={onReply} disabled={!replyBody.trim()||replyPosting} style={{ fontFamily:F.body, fontSize:12, fontWeight:600, padding:"7px 18px", borderRadius:7, border:"none", background:replyBody.trim()?A:"var(--surface2)", color:replyBody.trim()?"var(--text)":"var(--text-muted)", cursor:replyBody.trim()?"pointer":"default" }}>{replyPosting?"Posting…":"Post"}</button>
@@ -1135,11 +1468,10 @@ function ThreadView({ post, replies, repliesLoading, replyBody, setReplyBody, on
       ) : (
         <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:10, padding:"14px 16px", marginBottom:14, textAlign:"center", fontFamily:F.body, fontSize:13, color:"var(--text-muted)" }}>Sign in to reply</div>
       )}
-
       <div style={{ fontFamily:F.syne, fontSize:13, fontWeight:600, color:"var(--text)", marginBottom:11 }}>{replies.length} {replies.length===1?"Reply":"Replies"}</div>
       {repliesLoading ? <Spin/>
         : replies.length===0
-        ? <div style={{ textAlign:"center", padding:"24px 0", fontFamily:F.body, fontSize:13, color:"var(--text-muted)" }}>No replies yet — be the first.</div>
+        ? <div style={{ textAlign:"center", padding:"24px 0", fontFamily:F.body, fontSize:13, color:"var(--text-muted)" }}>No replies yet.</div>
         : replies.map(r => (
           <div key={r.id} style={{ display:"flex", gap:10, padding:"11px 0", borderBottom:"1px solid var(--border)" }}>
             <Av name={r.author} size={24} />
@@ -1148,7 +1480,7 @@ function ThreadView({ post, replies, repliesLoading, replyBody, setReplyBody, on
                 <span style={{ fontFamily:F.body, fontSize:12.5, fontWeight:600, color:"var(--text-mid)" }}>{r.author}</span>
                 <span style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)" }}>{timeAgo(r.created_at)}</span>
               </div>
-              <p style={{ fontFamily:F.body, fontSize:13, color:"var(--text-mid)", lineHeight:1.65, whiteSpace:"pre-wrap" }}>{r.body}</p>
+              <div style={{ fontFamily:F.body, fontSize:13, color:"var(--text-mid)", lineHeight:1.65 }} dangerouslySetInnerHTML={{__html: r.body}} />
             </div>
           </div>
         ))}

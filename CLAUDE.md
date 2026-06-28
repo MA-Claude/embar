@@ -298,11 +298,17 @@ Small private or public groups of friends with shared interests across multiple 
 6. ✅ Community tab with Discord-style layout (sidebar nav + feed + pinned input)
 7. ✅ Sparks — posting and display
 8. ✅ Responsive layout (mobile/tablet/desktop)
-9. ✅ Forums — titled threads with tags, inline thread expansion, replies
+9. ✅ Forums — titled threads with tags, status badges (Open/Question/Discussion/Hot/Answered/Pinned), inline thread expansion, replies, reaction row (warmth/lightbulb/heart/chat)
+10. ✅ Forum thread view — two-column layout (author panel left, content right), numbered replies, reaction buttons
+11. ✅ Reads — long-form posts with category badges (Essay/Analysis/Personal/Deep dive), featured card + grid layout
+12. ✅ Read article view — editorial style: large Syne title, coral underline, author block, styled body (blockquotes, headings, links)
+13. ✅ Inline composers — clicking "+ New Topic" or "Write a Read" expands a composer directly within the page (no popup window). Forum composer has two-column layout matching the real post. Read composer has cover zone, category pills, large title, coral underline, author block — all matching the published article view.
+14. ✅ Rich text editor — bold, italic, heading, blockquote, bullet list, image, colour swatches — used in all post composers and replies
+15. ✅ Stream tab — unified feed of all post types with filter chips
 
 ## Pending before next session
 
-**SQL migration needed:** Run `supabase-forums-migration.sql` in Supabase to create/update the community_posts table with parent_id and tags columns:
+**SQL migration needed (if not already run):** Run `supabase-forums-migration.sql` in Supabase to create/update the community_posts table with parent_id and tags columns:
 1. Go to https://supabase.com/dashboard/project/wntaftiaptuzwzcekfhq/sql/new
 2. Paste the full contents of `supabase-forums-migration.sql` (in the project root)
 3. Click Run
@@ -310,11 +316,13 @@ This is safe to run even if the table already exists. It takes 30 seconds.
 
 ## What to build next
 
+- **Reads — real image upload for cover image** — the cover zone in the Read composer currently shows a placeholder; wire it up to Supabase storage so users can actually upload a cover photo
+- **Reactions — persist to database** — warmth/lightbulb/heart reactions are client-side only right now (they reset on page reload). Need a `reactions` table in Supabase to store them permanently
 - **Wiki** — editable entries with edit history and change request system
 - **Topic category tree** — top-level categories covering all subjects, not just YouTube
 - **Relevance-first search** — upgrade from basic SQL to Meilisearch or Typesense
 - **Reply counts in Stream tab** — forum threads showing in Stream should also show reply count
-- **Forum status** — Solved / Unsolved / Open flag on threads
+- **Post cards visual variety** — individual post cards should eventually have unique visual designs (different layouts, accent colours, textures). The feed should feel alive, not a uniform grid of identical boxes. Build once core features are stable.
 
 ---
 
