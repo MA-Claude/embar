@@ -8,10 +8,29 @@ This file is read by Claude Code at the start of every session. It contains ever
 
 ## What Embar is
 
-A community platform for people who love content — YouTube channels, videos, and eventually films and TV. The place where passionate communities gather, discuss, and discover. Warm, human, anti-algorithm. Champions small creators and niche communities.
+A community platform built around **Forums and Wiki** as its primary purpose — a permanent, searchable knowledge base and discussion space for any topic, built and maintained by the community. Warm, human, anti-algorithm.
+
+Embar is **not limited to any one subject**. It covers everything — film, TV, YouTube, music, sport, tech, hobbies, life. The YouTube section was built first as a starting point, but the platform is designed to expand to all topics.
+
+The key problem Embar solves: Reddit buries old threads and makes finding answers hard. Embar keeps everything searchable forever, ranked by relevance not age.
 
 Live URL: https://embar-tawny.vercel.app/
 GitHub: https://github.com/MA-Claude/embar
+
+---
+
+## Platform direction (confirmed)
+
+**Primary features — build these properly first:**
+- **Forums** — durable, titled discussions that stay findable forever. Not ranked by age. Searchable by relevance.
+- **Wiki** — community-built knowledge base. Trusted members write and edit. Everyone else can suggest changes.
+
+**Secondary features — already partially built, complete after primary:**
+- **Sparks** — quick takes and reactions (Discord-style chat layer)
+- **Reads** — long-form writing / blog posts
+- **Gatherings** — community events
+
+**Why this order:** Forums and Wiki create permanent value. Sparks are useful but ephemeral. The goal is to be the place people find when searching for something, not just a chat room.
 
 ---
 
@@ -39,263 +58,309 @@ No coding experience. Explain everything in plain English. No jargon without an 
 | Next.js | The app framework — builds the website |
 | Supabase | Database, user login, file storage, real-time feed |
 | Vercel | Hosting — puts the site on the internet automatically |
-| YouTube Data API | Channel and video data (Phase 1) |
-| TMDB API | Films and TV data (Phase 2) |
+| YouTube Data API | Channel and video data |
+| TMDB API | Films and TV data (future) |
 | Resend | Emails and notifications (later) |
-| Google AdSense | Ad monetisation (after launch) |
+| Google AdSense | Ad monetisation — banner/sidebar ads in empty spaces, after launch |
 | browser-image-compression | Client-side image compression before upload |
+
+**Future tools to consider when scaling:**
+- **Meilisearch or Typesense** — dedicated search engine for relevance-first forum/wiki search (typo tolerance, filters, instant results). Better than basic SQL search at scale. Meilisearch is MIT licensed and easiest to start with.
+- **Cloudflare R2** — zero egress fee storage. Replace Supabase storage when costs rise.
+- **Backblaze B2** — cheap object storage (~$6/TB/month). Pairs with Cloudflare for free bandwidth.
+- **Redis** — caching layer to reduce database load by ~90% at scale.
+- **Cloudflare CDN** — serves images and static files from edge locations worldwide, fast and free egress.
+
+**Infrastructure migration path (when needed, not now):**
+- Phase 1 (now): Supabase + Vercel + GitHub. Cost ~$0/month.
+- Phase 2 (growth, ~50k users/day): Move file storage to Cloudflare R2 or Backblaze B2 + Cloudflare CDN.
+- Phase 3 (scale, ~500k users/day): Move compute to Cloudflare Workers or a VPS (Hetzner/DigitalOcean). Export Postgres from Supabase to self-hosted. Everything is migrateable — Supabase uses standard Postgres, Vercel uses standard Next.js.
+
+---
+
+## Forum system (primary feature — to be built properly)
+
+Forums are durable, titled posts designed to stay findable forever. The biggest problem with Reddit is threads get buried by age. Embar fixes this.
+
+**Search and discovery:**
+- Ranked by **relevance**, not recency. An old thread with a great answer beats a new thread with no answer.
+- Relevance score = keyword match weight + solution/quality signals + minor recency factor.
+- Target search engine: **Meilisearch** or **Typesense** (to be integrated when basic SQL search isn't enough).
+- Faceted filters in search UI: Status (Solved/Unsolved/Open), Date range, Content type, Topic tags.
+
+**Tagging and categories — crowdsourced (folksonomy model):**
+- The OP (person posting) adds tags and categories they think it fits.
+- Any other user can also suggest additional categories — so a post gets discovered from multiple angles.
+- If users disagree on a category, both can be valid. No single "correct" category.
+- Tags are optional when posting but encouraged — the system can suggest tags based on keywords in the post.
+- Auto-merge similar tags (e.g. "F1" and "Formula 1" get suggested as the same thing).
+
+**Category structure — poly-hierarchical (multi-parent):**
+- A post can live in multiple categories simultaneously. Example: a Blade Runner thread can be in Films → Sci-Fi AND Films → 1980s AND Directors → Ridley Scott.
+- Main trunk → branches → sub-branches. But a post isn't locked to one branch.
+- Top-level categories cover all topics — not just YouTube or film. Sport, tech, food, music, life, etc.
+- Users can filter down to just the topics they care about (e.g. only see forum posts about TV shows).
+
+**Multiple valid answers:**
+- No single "Accepted Answer" that buries everything else.
+- Search results group threads by approach (e.g. "Software fix", "Hardware fix", "Workaround").
+- Users can vote per-approach, not just per-thread.
+- Old threads that still work get a "Still valid" confirmation button — if enough users confirm, the thread gets resurfaced automatically.
+
+**Pre-post duplicate detection:**
+- As a user types a forum title, search suggests existing threads that match.
+- User can choose to add to an existing thread instead of creating a duplicate.
+- Reduces fragmentation without forcing it.
+
+---
+
+## Wiki system (primary feature — to be built properly)
+
+The wiki is the curated, permanent knowledge layer. Forums feed into it.
+
+**How it works:**
+- Trusted members write and edit wiki entries directly.
+- All other users can submit "change requests" — proposed edits that trusted members review and approve (like a pull request).
+- Full edit history — nothing permanently deleted, everything reversible.
+- Flagging system — any user can flag a suspicious change, which freezes that section for review.
+
+**Wiki–Forum connection:**
+- Trusted members can click "Promote to Wiki" on any forum post to pull its content into the wiki.
+- The wiki entry links back to the original forum thread for ongoing discussion.
+- The wiki stays fresh because it's fed by the best forum content, not by separate writing effort.
+
+**What a wiki page can cover:**
+- Any topic — a film, a YouTube channel, a sport, a concept, a place, anything.
+- Background and history, what to expect, notable moments, community context.
+
+**Trust tiers:**
+- General users: can post in forums, submit wiki change requests, suggest tags/categories.
+- Trusted members (earned over time): can edit wiki directly, approve change requests, promote forum posts to wiki.
+- Community leaders: moderation powers within their topic area.
+
+---
+
+## Search (to be built as a core feature)
+
+Search is not an afterthought — it's one of the main reasons Embar exists.
+
+**Principles:**
+- Relevance first, not recency. A 3-year-old solved thread ranks above a 1-day-old unanswered one.
+- All content is always searchable — forums, wiki, sparks, reads. Nothing gets buried by age.
+- Faceted filters: content type, date range, topic, solved/unsolved status, tags.
+- "Show me everything" default view: wiki summary at top if available, then top forum threads, then recent discussion.
+
+**Implementation path:**
+- Current: basic Postgres full-text search (good enough for now).
+- Future: replace with Meilisearch or Typesense for typo tolerance, instant results, complex filtering.
+
+---
+
+## Content modes (two types, both always searchable)
+
+**Library mode (evergreen):**
+- Forums, wiki entries, Reads.
+- Permanent. Never archived. Indexed forever.
+- Resurfaced by relevance when searched.
+- Example: a forum post about fixing a software bug from 3 years ago still appears first if it's the best answer.
+
+**Lounge mode (discussion):**
+- Sparks, reaction threads, "what did you think of X" posts, top 10 lists.
+- Still searchable forever — just not under pressure to be "solved".
+- Example: an F1 race reaction thread from 2024 still appears when someone searches "Monaco GP 2024 controversy" in 2027.
+- No "accepted answer" pressure. Engagement is measured by conversation quality, not resolution.
+
+Both modes live in the same platform and search index. The difference is expectation, not visibility.
+
+---
+
+## Monetisation plan
+
+**Core principle: content is always free and open. You charge for features and convenience, never for access to information.**
+
+**Revenue streams (in order of when to introduce them):**
+
+1. **Google AdSense — banner/sidebar ads** (after launch, once traffic exists)
+   - Static banners in empty spaces — sidebar, below the fold, between content sections.
+   - Keep ads visually separated from content. Non-animated, clearly labelled.
+   - Contextual ads (relevant to the page topic) perform better and feel less intrusive.
+   - Won't damage the feel if design quality is high and ads stay in their lane.
+
+2. **Freemium membership** (after community is established)
+   - Free tier: full access to all content, forums, wiki, posting.
+   - Paid tier: ad-free experience, profile badge, fast-track to trusted member status, possible custom themes.
+   - Never put knowledge behind a paywall.
+
+3. **API / data access** (long-term, once data is substantial)
+   - Structured wiki and forum data can be sold to researchers, developers, or AI companies.
+   - "Free for humans, paid for machines."
+   - Aligns with Stack Overflow's fastest-growing revenue stream.
+
+4. **Affiliate links** (natural fit for recommendation-heavy discussions)
+   - If a forum recommends a product, relevant affiliate links can be appended.
+   - Feels helpful rather than exploitative — user was already going to buy it.
+
+**Revenue benchmarks for context:**
+- Top niche forums: $100k–$500k/year.
+- Stack Overflow (forum/wiki hybrid): ~$115M/year.
+- Fandom (open wiki network): ~$130M/year.
+- Wikipedia (donations only): ~$185M/year.
+
+---
+
+## Cost overview and projections
+
+All costs fall on the Embar owner, not users.
+
+| Stage | Users/day | Est. monthly cost |
+|---|---|---|
+| Launch | 0–5k | ~$0–35/month |
+| Growth | 50k | ~$200/month |
+| Scale | 500k | ~$1,350/month |
+| Enterprise | 2M+ | ~$6,000+/month |
+
+**Cost-saving strategies:**
+- Use Cloudflare R2 for storage (zero egress fees) instead of AWS S3.
+- Pair Backblaze B2 with Cloudflare CDN for images — free bandwidth.
+- Use Redis caching to reduce database queries by ~90%.
+- Convert user image uploads to WebP/AVIF automatically — 40–60% smaller files.
+- Move old attachments (2+ years) to cold storage (~$0.002/GB).
+
+**Current costs:** ~$0/month (free tiers of Supabase, Vercel, GitHub).
 
 ---
 
 ## Phase 1 decisions (all finalised)
 
-**Content scope:** YouTube channels and videos only. Films and TV in Phase 2.
+**Content scope:** YouTube channels built first. All topics to follow.
 
-**Community customisation:** Preset themes only (more than 6 — to be designed together). No profile picture or banner image uploads in Phase 1. Generated avatars from user initials + chosen colour instead.
+**Community customisation:** Preset themes only. No profile picture or banner image uploads in Phase 1. Generated avatars from user initials + chosen colour instead.
 
-**Onboarding:** Single screen, all three threads together (what you love watching / how you feeling / what world to explore). Options within each thread to be expansive — designed together before building.
+**Post card creativity:** Individual post cards should eventually have unique visual designs — different layouts, accent colours, textures. The feed should feel alive, not a uniform grid of identical boxes. Build once core features are stable.
 
-**Post layout:** Post on left, replies on right. Hover enlarges card and shows preview with extra info (no click needed). Click opens a dedicated full post page. Design to be done together before building.
-
-**Post card creativity:** Individual post cards (discussions, blogs, reviews) should eventually have unique visual designs chosen by the creator — different layouts, accent colours, textures. The feed should feel alive and slightly unpredictable, not a uniform grid of identical boxes. This is a Phase 1 enhancement to build once core features are stable.
-
-**Images in posts/blogs/threads:** Users CAN upload images. Auto-compressed client-side using browser-image-compression before upload. Max 1920px wide, ~80% quality, 10MB hard cap. Result: ~150-400KB per image. Profile pictures and community banners deferred to Phase 2.
+**Images in posts:** Users CAN upload images. Auto-compressed client-side using browser-image-compression. Max 1920px wide, ~80% quality, 10MB hard cap. Profile pictures and community banners deferred to Phase 2.
 
 ---
 
-## Platform structure (three contexts)
+## Platform structure
 
-**1. Content pages** (a YouTube channel or video)
-Neutral ground. Aggregates reviews, discussions, and blog posts from everyone — individuals and communities alike. The universal meeting point.
+**1. Forums** (primary)
+Durable titled discussions. Poly-hierarchical categories. Relevance-first search. Never buried by age.
 
-**2. Communities**
-Two parallel layers:
-- Main chat — flowing, always-on conversation (Discord-like) with branches that spin off and can be pinned
-- Content layer — structured reviews, discussions, and blog posts by members
+**2. Wiki** (primary)
+Community-built knowledge base. Trusted member editing. Change request system. Fed by forum content via "Promote to Wiki".
 
-Plus a sidebar for filtering by content type: All / Chat / Discussions / Blogs / Reviews / Pinned. Each filtered view supports keyword search.
+**3. Topic communities**
+Each topic (a YouTube channel, a film, a sport, anything) has its own community space with all content types available within it.
 
-**3. Individual profiles**
-Users can write their own reviews, discussions, and blog posts independently. Other users can follow them. Their content appears on their profile and on relevant content pages.
+**4. Individual profiles**
+Users have their own profile showing everything they've written. Others can follow them.
 
----
-
-## Community chat branches (categories)
-
-When a branch spins off from the main community chat, it gets a category:
-- New video release
-- Live stream / watch-along
-- Watch party
-- Hot debate
-- Deep dive
-- Q&A
-- Recommendations
-- Creator news
-- Collaboration announcement
-- Fan contributions
-- Weekly topic
-- Off-topic
-- Community challenge
-- Milestone celebration
-
----
-
-## User accounts — sign up approach
-
-Sign up requires only a username and password. Email is completely optional.
-
-**How it works technically:** Supabase requires an email internally, so we auto-generate a placeholder (username@embar.users) that the user never sees. To the user, they just have a username + password.
-
-**Email is optional and added later** — for account recovery, or to connect external apps (YouTube, Reddit, Discord). When added, it replaces the placeholder in Supabase.
-
-**Never ask for email during sign up.** Only surface it as an optional setting in their profile after they have an account.
-
----
-
-## Wiki system (confirmed feature)
-
-Every content page (YouTube channel, video, film, TV show) has a community wiki section alongside reviews, discussions, and blogs. Community members collaboratively write and maintain it.
-
-**What a wiki page contains:**
-- Creator/film background and history
-- Content style and what to expect
-- Notable videos/episodes/moments
-- Community significance and history
-- For YouTube: fills the gap that APIs don't cover
-
-**Moderation safeguards:**
-- Full edit history — nothing permanently deleted, everything reversible
-- New users: edits go into review queue before going live
-- Trusted members (earned over time): can edit and approve directly
-- Flagging system: any member can flag a change, freezes that section pending review
-- Community leaders have moderation powers on their community's pages
-
-**Phase placement:** Basic wiki (community-editable description + info) in Phase 1 for YouTube channels. Full wiki system with edit history, review queues, and trusted member tiers in Phase 2.
-
----
-
-## Social structure (three tiers)
-
-This structure should be designed carefully before building. Do not rush into it.
-
----
-
-### Individual
-The foundation of everything. A single person with their own Embar account.
-
-- Has their own profile page showing everything they've written — reviews, discussions, blogs
-- Follows YouTube channels and communities they care about
-- Can be followed by other users who enjoy their writing
-- Their content appears on their profile AND on the relevant channel/community pages
-- Completely independent — they don't need to be in a crew or community to participate
-- Think of them like a writer or contributor who exists across the whole platform
-
----
-
-### Crew
-A small, tight-knit group — usually friends, a friend group, or a collective of people with overlapping tastes.
-
-- Can be **private** (invite only, content visible only to members) or **public** (anyone can see and request to join)
-- The key difference from a community: a crew is **not tied to one channel or topic** — a crew's interests span multiple communities. A crew of five friends might all love film essays, tech YouTube, AND horror, so they exist across all three communities together
-- Crews give smaller groups a shared space without forcing everyone into the same giant public community
-- A crew member is still also an individual — they keep their own profile and content
-- Crews can have their own internal feed showing activity across all the communities they follow together
-- The word "group" was deliberately avoided — "Crew" feels warmer and more personal
-
----
-
-### Community
-The main focus and heart of Embar. This is where the majority of activity lives.
-
-- **One community per YouTube channel** (Phase 1). Not multiple communities per channel — each channel has exactly one community. The channel page and its community are the same place.
-- In Phase 2: one community per film, TV show, or genre
-- Communities are large and public — anyone can join and contribute
-- Each community has: a main flowing chat (Discord-like with branches), a content layer (reviews, discussions, blogs by members), a wiki (community-maintained information about the channel), and a sidebar navigator
-- Communities are built around shared passion for content — not around people. The content (the channel, the show) is the anchor
-- Designed to feel like the natural home for fans of that channel — warm, organised, and alive
+**5. Crews**
+Small private or public groups of friends with shared interests across multiple topics.
 
 ---
 
 ## Community content naming system
 
-Embar uses its own display names for content types within communities. Some are creative replacements, some keep their original names because they are self-explanatory. Always use the display name in the UI and in any copy. Use the internal name in code, database columns, and API responses.
-
 | Display name (UI) | Internal name (code/DB) | What it is |
 |---|---|---|
-| **Stream** | `all` | The default tab — shows all content types together in one feed |
-| **Sparks** | `threads` | Quick takes, reactions, back-and-forth conversation. Fast and light. |
-| **Forums** | `forums` | Durable, titled posts designed to stay findable forever. Kept as "Forums" because it is clear and informational. |
-| **Reads** | `blogs` | Long-form individual writing — essays, deep dives, retrospectives. |
-| **Wiki** | `wiki` | Community-built knowledge archive. Kept as "Wiki" because it is clear and informational. Individual wiki entries are labelled "Lore" on their cards. |
-| **Gatherings** | `events` | Community events — watch parties, video release moments, livestream countdowns. |
+| **Stream** | `all` | Default tab — all content types in one feed |
+| **Sparks** | `threads` | Quick takes, reactions. Fast and light. Secondary feature. |
+| **Forums** | `forums` | Durable titled posts. Primary feature. |
+| **Reads** | `blogs` | Long-form writing. |
+| **Wiki** | `wiki` | Community knowledge base. Primary feature. |
+| **Gatherings** | `events` | Events, watch parties. |
 
-### Card type labels (shown on each post card in the feed)
+### Card type labels
 | Label | Content type |
 |---|---|
-| Spark | A thread post |
-| Root | A forum post (individual forum posts are called "Roots" — durable, foundational) |
-| Read | A blog post |
-| Lore | A wiki article |
+| Spark | A quick reaction post |
+| Root | A forum post |
+| Read | A long-form post |
+| Lore | A wiki entry |
 | Gathering | An event |
 
-### What NOT to do
-- Never show the internal name (threads, blogs, events) in the UI — always use the display name
-- Never call the all-feed tab "All" or "Everything" — it is called "Stream"
-- Do not invent new names for content types without updating this table
+### Rules
+- Never show internal names (threads, blogs, events) in the UI
+- Never call the all-feed tab "All" — it is Stream
+- Do not invent new names without updating this table
 
 ---
 
-## Phase 1 build order
+## What's been built so far
 
 1. ✅ Project setup (Next.js + GitHub + Vercel)
 2. ✅ CLAUDE.md project memory file
 3. ✅ Supabase connection
 4. ✅ User accounts (username + password, no email required)
-5. ✅ Content pages — YouTube channels and videos
-6. Communities (creation, themes, joining)
-7. Individual reviews, discussions, blogs
-8. Community content layer (reviews/discussions/blogs within communities)
-9. Community main chat + branches
-10. Community sidebar / content navigator
-11. Global feed
-12. Onboarding rabbit hole
-13. Image uploads with compression (posts/blogs/threads)
-14. Basic search
+5. ✅ YouTube channel pages with community themes
+6. ✅ Community tab with Discord-style layout (sidebar nav + feed + pinned input)
+7. ✅ Sparks — posting and display (needs SQL migration to go live — see below)
+8. ✅ Responsive layout (mobile/tablet/desktop)
 
----
+## Pending before next session
 
-## What Phase 1 does NOT include
+**SQL migration needed:** The `community_posts` database table does not exist yet. Without it, Sparks cannot be saved. To create it:
+1. Go to https://supabase.com/dashboard/project/wntaftiaptuzwzcekfhq/sql/new
+2. Paste the contents of `supabase-migration.sql` (in the project root)
+3. Click Run
+This takes 30 seconds and unlocks Spark posting.
 
-- Films or TV (Phase 2)
-- Profile picture uploads (Phase 2)
-- Community banner image uploads (Phase 2)
-- Rating system for films/TV (Phase 2)
-- Google AdSense (after launch, once content and traffic exist)
-- Creator claim and verification (Phase 3)
-- Full-text community search (Phase 3)
+## What to build next (after migration)
 
----
-
-## Supabase project
-
-URL: https://wntaftiaptuzwzcekfhq.supabase.co
-Region: West Europe (London)
+- **Forums** — proper titled discussion posts with tags, categories, replies
+- **Wiki** — editable entries with edit history and change request system
+- **Topic category tree** — top-level categories covering all subjects, not just YouTube
+- **Relevance-first search** — upgrade from basic SQL to Meilisearch or Typesense
 
 ---
 
 ## Theme system
 
-10 themes built and working. Registered in `lib/theme.ts` (THEMES array) and `app/globals.css` (one CSS block per theme). To add a new theme: add an entry to THEMES in lib/theme.ts AND a `[data-theme='name']` block in globals.css.
+10 themes built and working. Registered in `lib/theme.ts` (THEMES array) and `app/globals.css`.
 
-**Platform themes** (user's global preference, saved to `localStorage` as `embar-theme`):
+**Platform themes:**
 - Nova (`light`) — cobalt blue, coral — default
 - Dusk (`dark`) — dark indigo, purple, warm rose
 
-**Community themes** (one auto-assigned per channel via name hash, future: set by community leaders):
-- Ember — deep brown-black, coral, amber — accent `#E07550`
-- Grove — forest green, cream, terracotta — accent `#4A8C5C`
-- Rose — deep rose-black, pink, blush — accent `#C46B8A`
-- Ocean — deep blue-black, electric blue, cyan — accent `#0EA5E9`
-- Obsidian — dark, purple — accent `#7C5CE8`
-- Sand — warm sand/gold (light theme) — accent `#C4A570`
-- Midnight — deep blue — accent `#4B5FD4`
-- Gold — dark, gold — accent `#D4A820`
+**Community themes:**
+- Ember — accent `#E07550`
+- Grove — accent `#4A8C5C`
+- Rose — accent `#C46B8A`
+- Ocean — accent `#0EA5E9`
+- Obsidian — accent `#7C5CE8`
+- Sand — accent `#C4A570`
+- Midnight — accent `#4B5FD4`
+- Gold — accent `#D4A820`
 
-**How theme is applied:**
-- `data-theme` attribute on `<html>` element drives all CSS variables
-- Anti-flash script in `app/layout.tsx` sets data-theme before first paint (prevents white/dark flash)
-- `<html>` has `suppressHydrationWarning` to prevent React error from the script's DOM change
-- `lib/theme.ts` exports `useTheme()` hook — reads/writes `embar-theme` localStorage, updates state for toggle button display only (does NOT touch data-theme on init — anti-flash handles that)
-- `lib/theme.ts` exports `defaultCommunityTheme(channelName)` — deterministic hash pick from community themes
-
-**Channel page theme behaviour:**
-- Defaults to the channel's community theme on every visit
-- 3-option selector in Nav bar: ☀ Light | ☾ Dark | ◈ [Theme name]
-- Per-channel preference saved to localStorage as `embar-channel-theme-{channelId}`
-- Community preset ID saved to localStorage as `embar-channel-preset-{channelId}` — lets the anti-flash script apply the right theme instantly on repeat visits
-- On leaving a channel page, global theme is restored (cleanup effect in channel page)
-
-Community members get generated avatars (initials + colour) not uploaded photos in Phase 1.
+**How theme works:**
+- `data-theme` on `<html>` drives all CSS variables
+- Anti-flash script in `app/layout.tsx` sets it before first paint
+- `suppressHydrationWarning` on `<html>` prevents React mismatch error
+- `useTheme()` reads localStorage only — does NOT touch DOM on init
+- `defaultCommunityTheme(channelName)` — deterministic hash, picks community theme from channel name
 
 ---
 
-## Key files and what they do
+## Key files
 
 | File | What it does |
 |---|---|
 | `app/page.tsx` | Home page |
-| `app/youtube/page.tsx` | YouTube channels listing — categories, search, channel cards with community accent colours |
-| `app/channel/[id]/page.tsx` | Individual channel page — community tab, videos tab, 3-way theme picker |
-| `app/video/[videoId]/page.tsx` | Individual video page — embed, description, community discussion placeholder |
-| `app/components/Nav.tsx` | Shared nav bar — auth modal, theme toggle (3-option on channel pages) |
-| `app/layout.tsx` | Root layout — anti-flash theme script, suppressHydrationWarning on html |
+| `app/youtube/page.tsx` | YouTube channels listing |
+| `app/channel/[id]/page.tsx` | Channel page — community tab (sidebar + feed + input), videos tab |
+| `app/components/Nav.tsx` | Nav bar — auth modal, theme toggle |
+| `app/layout.tsx` | Root layout — anti-flash script |
 | `app/globals.css` | All CSS variables and theme blocks |
-| `lib/theme.ts` | THEMES array, useTheme() hook, defaultCommunityTheme() function |
-| `lib/channels.ts` | Supabase read/write for channels table, Channel type |
+| `lib/theme.ts` | THEMES array, useTheme(), defaultCommunityTheme() |
+| `lib/channels.ts` | Supabase read/write for channels table |
 | `lib/auth.ts` | Sign up, sign in, sign out, getCurrentUsername |
-| `app/api/channel-feed/route.ts` | Fetches YouTube RSS feed, upserts videos to Supabase |
-| `app/api/resolve-channel/route.ts` | Scrapes YouTube page to get channel ID, name, thumbnail, subscriber count |
-| `app/api/search/route.ts` | Full-text search — calls search_channels_ranked and search_videos_ranked RPC functions |
+| `lib/supabase.ts` | Supabase client instance (exports `supabase`) |
+| `app/api/channel-feed/route.ts` | YouTube RSS feed fetcher |
+| `app/api/resolve-channel/route.ts` | Scrapes YouTube for channel metadata |
+| `app/api/search/route.ts` | Full-text search via Postgres RPC functions |
+| `supabase-migration.sql` | SQL to create community_posts table — run this in Supabase dashboard |
 
 ## Supabase database tables
 
@@ -303,19 +368,10 @@ Community members get generated avatars (initials + colour) not uploaded photos 
 |---|---|
 | `channels` | id, youtube_channel_id, name, description, thumbnail_url, youtube_url, added_by, created_at, category, subcategory, subscriber_count |
 | `videos` | id, video_id, channel_id, title, description, thumbnail_url, published_at, youtube_url, created_at |
+| `community_posts` | id, channel_id, author, type, title, body, created_at, updated_at — **table not yet created, run supabase-migration.sql** |
 | `users` (auth) | Managed by Supabase Auth — username stored as display_name |
 
-## Supabase RPC functions (PostgreSQL full-text search)
+## Supabase RPC functions
 
-- `search_channels_ranked(query text)` — searches channel name, description, category, subcategory
-- `search_videos_ranked(query text)` — searches video title, description
-
----
-
-## Cost overview
-
-All costs fall on the Embar owner, not users.
-- Supabase: free up to 500MB database, 1GB storage. ~$0.021/GB after.
-- Vercel: free personal tier — covers everything at this stage
-- YouTube Data API: free, 10,000 requests/day. Caching means this goes very far.
-- Running cost at launch: ~$0/month
+- `search_channels_ranked(query text)` — searches channels
+- `search_videos_ranked(query text)` — searches videos
