@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;600;700;800&family=Manrope:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -76,22 +76,25 @@
 /* ── GROVE — forest green, cream, terracotta ── */
 [data-theme="grove"] {
   color-scheme: dark;
-  --bg: #080F08;
-  --surface: #0E180E;
-  --surface2: #162016;
-  --accent: #4A9040;
-  --coral: #C05830;
-  --text: #E8F0D8;
-  --text-mid: #80A870;
-  --muted: #507040;
-  --border: #202E20;
-  --border-strong: #304430;
-  --accent-light: #142018;
-  --coral-light: #201408;
-  --blue: #4A9040;
-  --blue-light: #142018;
-  --blue-mid: #243A24;
-  --text-muted: #507040;
+  --bg: #0C1A0E;
+  --surface: #0E1E10;
+  --surface2: #162E1A;
+  --accent: #2A7A3A;
+  --accent-bright: #4ABA5A;
+  --coral: #D4845A;
+  --text: #E8F5EA;
+  --text-mid: #A0C8A8;
+  --muted: #6A9070;
+  --border: #1A4A22;
+  --border-strong: #245830;
+  --accent-light: #0E1E10;
+  --coral-light: rgba(212,132,90,.1);
+  --blue: #4ABA5A;
+  --blue-light: rgba(42,122,58,.13);
+  --blue-mid: #162E1A;
+  --text-muted: #6A9070;
+  --nav-bg: #060E07;
+  --nav-border: #0E200F;
 }
 
 /* ── ROSE — deep rose-black, pink, blush ── */

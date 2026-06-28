@@ -296,23 +296,25 @@ Small private or public groups of friends with shared interests across multiple 
 4. ✅ User accounts (username + password, no email required)
 5. ✅ YouTube channel pages with community themes
 6. ✅ Community tab with Discord-style layout (sidebar nav + feed + pinned input)
-7. ✅ Sparks — posting and display (needs SQL migration to go live — see below)
+7. ✅ Sparks — posting and display
 8. ✅ Responsive layout (mobile/tablet/desktop)
+9. ✅ Forums — titled threads with tags, inline thread expansion, replies
 
 ## Pending before next session
 
-**SQL migration needed:** The `community_posts` database table does not exist yet. Without it, Sparks cannot be saved. To create it:
+**SQL migration needed:** Run `supabase-forums-migration.sql` in Supabase to create/update the community_posts table with parent_id and tags columns:
 1. Go to https://supabase.com/dashboard/project/wntaftiaptuzwzcekfhq/sql/new
-2. Paste the contents of `supabase-migration.sql` (in the project root)
+2. Paste the full contents of `supabase-forums-migration.sql` (in the project root)
 3. Click Run
-This takes 30 seconds and unlocks Spark posting.
+This is safe to run even if the table already exists. It takes 30 seconds.
 
-## What to build next (after migration)
+## What to build next
 
-- **Forums** — proper titled discussion posts with tags, categories, replies
 - **Wiki** — editable entries with edit history and change request system
 - **Topic category tree** — top-level categories covering all subjects, not just YouTube
 - **Relevance-first search** — upgrade from basic SQL to Meilisearch or Typesense
+- **Reply counts in Stream tab** — forum threads showing in Stream should also show reply count
+- **Forum status** — Solved / Unsolved / Open flag on threads
 
 ---
 
