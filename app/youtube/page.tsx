@@ -149,84 +149,37 @@ function ChannelCard({ ch, featured }: { ch: Channel; featured?: boolean }) {
                 }}>{catLabel}</span>
               )}
             </div>
-          </div>
-        </div>
-
-        {/* Description — always shown on featured, shown on hover for others */}
-        <div style={{
-          fontSize: 12,
-          color: "var(--text-mid)",
-          lineHeight: 1.6,
-          marginBottom: 10,
-          overflow: "hidden",
-          maxHeight: (featured || hovered) && ch.description ? "200px" : "0px",
-          opacity: (featured || hovered) && ch.description ? 1 : 0,
-          transition: "max-height .2s ease, opacity .18s ease",
-        }}>
-          {ch.description}
-        </div>
-
-        {/* Subcategory tag */}
-        {ch.subcategory && (hovered || featured) && (
-          <div style={{
-            fontSize: 10, color: "var(--text-muted)",
-            marginBottom: 8,
-            opacity: hovered || featured ? 1 : 0,
-            transition: "opacity .18s",
-          }}>
-            {ch.subcategory}
-          </div>
-        )}
-
-        {/* Stats row — appears on hover */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 6,
-          overflow: "hidden",
-          maxHeight: hovered ? "60px" : "0px",
-          opacity: hovered ? 1 : 0,
-          transition: "max-height .2s ease, opacity .18s ease",
-          marginBottom: hovered ? 10 : 0,
-        }}>
-          {[
-            { value: "—", label: "Members" },
-            { value: "—", label: "Posts" },
-            { value: ch.subscriber_count
-                ? ch.subscriber_count.replace(/\s*subscribers?/i, "")
-                : "—",
-              label: ch.subscriber_count ? "YouTube subs" : "Subs" },
-          ].map(stat => (
-            <div key={stat.label} style={{
-              background: "var(--surface2)",
-              borderRadius: 8, padding: "7px 8px",
-              textAlign: "center" as const,
-            }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", lineHeight: 1 }}>{stat.value}</div>
-              <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 3, textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>{stat.label}</div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+              — members
             </div>
-          ))}
+          </div>
+        </div>
+
+        {/* Description + CTA — revealed on hover */}
+        <div style={{
+          overflow: "hidden",
+          maxHeight: hovered && ch.description ? "160px" : "0px",
+          opacity: hovered && ch.description ? 1 : 0,
+          transition: "max-height .22s ease, opacity .18s ease",
+        }}>
+          <div style={{ height: "0.5px", background: "var(--border)", margin: "10px 0" }} />
+          <div style={{ fontSize: 12, color: "var(--text-mid)", lineHeight: 1.6, marginBottom: 10 }}>
+            {ch.description}
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: accentColor }}>
+            Enter community →
+          </div>
         </div>
 
         {/* Footer */}
         <div style={{
           marginTop: "auto",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
           paddingTop: 10,
           borderTop: "1px solid var(--border)",
         }}>
           <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
             Added {timeAgo(ch.created_at)}
             {ch.added_by && <span style={{ marginLeft: 4, opacity: 0.7 }}>by {ch.added_by}</span>}
-          </div>
-          <div style={{
-            fontSize: 11, fontWeight: 600, color: accentColor,
-            opacity: hovered ? 1 : 0,
-            transition: "opacity .15s",
-          }}>
-            Explore →
           </div>
         </div>
         </div>{/* end inner padding wrapper */}
