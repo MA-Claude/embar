@@ -176,6 +176,35 @@ The main focus and heart of Embar. This is where the majority of activity lives.
 
 ---
 
+## Community content naming system
+
+Embar uses its own display names for content types within communities. Some are creative replacements, some keep their original names because they are self-explanatory. Always use the display name in the UI and in any copy. Use the internal name in code, database columns, and API responses.
+
+| Display name (UI) | Internal name (code/DB) | What it is |
+|---|---|---|
+| **Stream** | `all` | The default tab — shows all content types together in one feed |
+| **Sparks** | `threads` | Quick takes, reactions, back-and-forth conversation. Fast and light. |
+| **Forums** | `forums` | Durable, titled posts designed to stay findable forever. Kept as "Forums" because it is clear and informational. |
+| **Reads** | `blogs` | Long-form individual writing — essays, deep dives, retrospectives. |
+| **Wiki** | `wiki` | Community-built knowledge archive. Kept as "Wiki" because it is clear and informational. Individual wiki entries are labelled "Lore" on their cards. |
+| **Gatherings** | `events` | Community events — watch parties, video release moments, livestream countdowns. |
+
+### Card type labels (shown on each post card in the feed)
+| Label | Content type |
+|---|---|
+| Spark | A thread post |
+| Root | A forum post (individual forum posts are called "Roots" — durable, foundational) |
+| Read | A blog post |
+| Lore | A wiki article |
+| Gathering | An event |
+
+### What NOT to do
+- Never show the internal name (threads, blogs, events) in the UI — always use the display name
+- Never call the all-feed tab "All" or "Everything" — it is called "Stream"
+- Do not invent new names for content types without updating this table
+
+---
+
 ## Phase 1 build order
 
 1. ✅ Project setup (Next.js + GitHub + Vercel)
