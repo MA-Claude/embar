@@ -251,6 +251,10 @@ export default function ChannelPage({ params }: { params: Promise<{ id: string }
   const [sparkBody,   setSparkBody]   = useState("");
   const [sparkPosting,setSparkPosting]= useState(false);
 
+  // Warmth reactions on feed cards (loaded for all posts on this page)
+  const [warmth,   setWarmth]   = useState<Record<string, number>>({});
+  const [myWarmth, setMyWarmth] = useState<Set<string>>(new Set());
+
   // Forum modal
   const [forumOpen,   setForumOpen]   = useState(false);
   const [fTitle,      setFTitle]      = useState("");
@@ -309,6 +313,25 @@ export default function ChannelPage({ params }: { params: Promise<{ id: string }
     }
   }, [channelId]);
 
+  // Load saved warmth counts for the feed cards (sparks + forums)
+  const loadWarmth = useCallback(async () => {
+    if (posts.length === 0) { setWarmth({}); setMyWarmth(new Set()); return; }
+    const { data } = await supabase
+      .from("post_reactions").select("post_id,author")
+      .in("post_id", posts.map(p => p.id)).eq("reaction","w");
+    if (!data) return;
+    const counts: Record<string,number> = {};
+    const mine = new Set<string>();
+    for (const row of data) {
+      counts[row.post_id] = (counts[row.post_id] ?? 0) + 1;
+      if (currentUser && row.author === currentUser) mine.add(row.post_id);
+    }
+    setWarmth(counts); setMyWarmth(mine);
+  }, [posts, currentUser]);
+
+  // Reload warmth whenever the post list changes
+  useEffect(() => { loadWarmth(); }, [loadWarmth]);
+
   useEffect(() => {
     if (!channelId) return;
     getCurrentUsername().then(setCurrentUser);
@@ -332,6 +355,20 @@ export default function ChannelPage({ params }: { params: Promise<{ id: string }
     await supabase.from("community_posts").insert({ channel_id:channelId, author:currentUser, type:"spark", body:sparkBody.trim(), parent_id:null, tags:[] });
     await loadPosts(); setSparkBody(""); setSparkOpen(false); setSparkPosting(false);
   }
+
+  // Toggle a warmth reaction on a feed card (spark/read/forum) — optimistic + saved
+  async function toggleWarmth(postId: string) {
+    if (!currentUser) return; // must be signed in to react
+    const had = myWarmth.has(postId);
+    setMyWarmth(prev => { const n = new Set(prev); if (had) n.delete(postId); else n.add(postId); return n; });
+    setWarmth(prev => ({ ...prev, [postId]: Math.max(0, (prev[postId] ?? 0) + (had ? -1 : 1)) }));
+    if (had) {
+      await supabase.from("post_reactions").delete()
+        .eq("post_id",postId).eq("author",currentUser).eq("reaction","w");
+    } else {
+      await supabase.from("post_reactions").insert({ post_id:postId, author:currentUser, reaction:"w" });
+    }
+  }
   async function postForum() {
     if (!fTitle.trim() || !fBody.trim() || !currentUser || !channelId) return;
     setFPosting(true);
@@ -353,7 +390,7 @@ export default function ChannelPage({ params }: { params: Promise<{ id: string }
     const { data } = await supabase.from("community_posts").select("*").eq("parent_id", post.id).order("created_at", { ascending: true });
     setReplies(data ?? []); setRepliesLoad(false);
   }
-  function closeThread() { setOpenPost(null); setReplies([]); setReplyBody(""); }
+  function closeThread() { setOpenPost(null); setReplies([]); setReplyBody(""); loadWarmth(); }
   async function postReply() {
     if (!replyBody.trim() || !currentUser || !openPost) return;
     setReplyPosting(true);
@@ -602,7 +639,7 @@ export default function ChannelPage({ params }: { params: Promise<{ id: string }
                 {postsLoading ? <Spin/>
                   : sparkPosts.length===0
                   ? <Empty icon={IcoSpark("#4ABA5A")} title="No Sparks yet" sub="Start the first spark — a question, take, or thought." action={currentUser?{label:"Start a spark",onClick:()=>setSparkOpen(true)}:undefined} />
-                  : sparkPosts.map(p => <SparkCard key={p.id} post={p} replyCount={replyCounts[p.id]??0} onClick={() => openThread(p)} A={A} />)}
+                  : sparkPosts.map(p => <SparkCard key={p.id} post={p} replyCount={replyCounts[p.id]??0} warmth={warmth[p.id]??0} warmed={myWarmth.has(p.id)} onWarmth={()=>toggleWarmth(p.id)} canReact={!!currentUser} onClick={() => openThread(p)} A={A} />)}
               </>
             )}
 
@@ -696,7 +733,7 @@ export default function ChannelPage({ params }: { params: Promise<{ id: string }
                   {postsLoading ? <div style={{ padding:24 }}><Spin/></div>
                     : forumPosts.length===0
                     ? <div style={{ padding:40 }}><Empty icon={IcoForum("#4ABA5A")} title="No threads yet" sub="Start the first forum thread." action={currentUser?{label:"New Topic",onClick:()=>setForumOpen(true)}:undefined} /></div>
-                    : forumPosts.map((p,i) => <ForumRow key={p.id} post={p} replyCount={replyCounts[p.id]??0} isLast={i===forumPosts.length-1} onClick={() => openThread(p)} A={A} />)}
+                    : forumPosts.map((p,i) => <ForumRow key={p.id} post={p} replyCount={replyCounts[p.id]??0} warmth={warmth[p.id]??0} warmed={myWarmth.has(p.id)} onWarmth={()=>toggleWarmth(p.id)} canReact={!!currentUser} isLast={i===forumPosts.length-1} onClick={() => openThread(p)} A={A} />)}
                 </div>
               </>
             )}
@@ -1015,7 +1052,7 @@ function StreamCard({ post, replyCount, onClick, AB }: { post:CommPost; replyCou
 }
 
 // ── Spark card ─────────────────────────────────────────────────────────────────
-function SparkCard({ post, replyCount, onClick, A }: { post:CommPost; replyCount:number; onClick:()=>void; A:string }) {
+function SparkCard({ post, replyCount, warmth, warmed, onWarmth, canReact, onClick, A }: { post:CommPost; replyCount:number; warmth:number; warmed:boolean; onWarmth:()=>void; canReact:boolean; onClick:()=>void; A:string }) {
   const [h,setH] = useState(false);
   const visibleTags = getVisibleTags(post);
   return (
@@ -1030,7 +1067,12 @@ function SparkCard({ post, replyCount, onClick, A }: { post:CommPost; replyCount
       <div style={{ fontFamily:F.body, fontSize:12, color:"var(--text-mid)", lineHeight:1.6, marginBottom:11, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{post.body}</div>
       {visibleTags.length>0 && <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:10 }}>{visibleTags.map(tg=><TagPill key={tg} tag={tg}/>)}</div>}
       <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:4 }}><IcoFlame/><span style={{ fontFamily:F.body, fontSize:11, fontWeight:600, color:"var(--coral)" }}>0</span></div>
+        <button
+          onClick={(e)=>{ e.stopPropagation(); onWarmth(); }}
+          title={canReact ? (warmed?"Remove warmth":"Give warmth") : "Sign in to react"}
+          style={{ display:"flex", alignItems:"center", gap:4, padding:"3px 9px", borderRadius:999, background:warmed?"rgba(212,132,90,.12)":"transparent", border:`1px solid ${warmed?"rgba(212,132,90,.3)":"var(--border)"}`, cursor:canReact?"pointer":"default", transition:"all .1s" }}>
+          <IcoFlame/><span style={{ fontFamily:F.body, fontSize:11, fontWeight:600, color:"var(--coral)" }}>{warmth}</span>
+        </button>
         <div style={{ display:"flex", alignItems:"center", gap:4 }}>{IcoReplyBubble("var(--text-muted)")}<span style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)" }}>{replyCount} replies</span></div>
         <span style={{ fontFamily:F.body, fontSize:11, fontWeight:600, color:"#4ABA5A", marginLeft:"auto" }}>View thread →</span>
       </div>
@@ -1039,7 +1081,7 @@ function SparkCard({ post, replyCount, onClick, A }: { post:CommPost; replyCount
 }
 
 // ── Forum row ──────────────────────────────────────────────────────────────────
-function ForumRow({ post, replyCount, isLast, onClick, A }: { post:CommPost; replyCount:number; isLast:boolean; onClick:()=>void; A:string }) {
+function ForumRow({ post, replyCount, warmth, warmed, onWarmth, canReact, isLast, onClick, A }: { post:CommPost; replyCount:number; warmth:number; warmed:boolean; onWarmth:()=>void; canReact:boolean; isLast:boolean; onClick:()=>void; A:string }) {
   const [h,setH] = useState(false);
   const statusId = getForumStatus(post);
   const s = statusMeta(statusId);
@@ -1063,7 +1105,13 @@ function ForumRow({ post, replyCount, isLast, onClick, A }: { post:CommPost; rep
           <div style={{ fontFamily:F.body, fontSize:12, color:"var(--text-mid)", lineHeight:1.55, marginBottom:visibleTags.length?9:0, display:"-webkit-box", WebkitLineClamp:1, WebkitBoxOrient:"vertical", overflow:"hidden" }} dangerouslySetInnerHTML={{__html: post.body}} />
           {visibleTags.length>0 && <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>{visibleTags.map(tg=><TagPill key={tg} tag={tg}/>)}</div>}
         </div>
-        <div style={{ flexShrink:0, textAlign:"right", minWidth:90 }}>
+        <div style={{ flexShrink:0, textAlign:"right", minWidth:90, display:"flex", flexDirection:"column", alignItems:"flex-end" }}>
+          <button
+            onClick={(e)=>{ e.stopPropagation(); onWarmth(); }}
+            title={canReact ? (warmed?"Remove warmth":"Give warmth") : "Sign in to react"}
+            style={{ display:"flex", alignItems:"center", gap:4, padding:"2px 8px", borderRadius:999, marginBottom:4, background:warmed?"rgba(212,132,90,.12)":"transparent", border:`1px solid ${warmed?"rgba(212,132,90,.3)":"var(--border)"}`, cursor:canReact?"pointer":"default" }}>
+            <IcoFlame/><span style={{ fontFamily:F.body, fontSize:11, fontWeight:600, color:"var(--coral)" }}>{warmth}</span>
+          </button>
           <div style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)" }}>{replyCount} replies</div>
           <div style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)", marginTop:2 }}>0 views</div>
           <div style={{ fontFamily:F.body, fontSize:11, color:"var(--text-mid)", marginTop:2 }}>{replyCount>0?`Last reply ${timeAgo(post.created_at)}`:"No replies"}</div>
@@ -1148,15 +1196,46 @@ function ForumThreadView({ post, replies, repliesLoading, replyBody, setReplyBod
   const [reacts, setReacts] = useState<Record<string,{w:number;l:number;h:number;c:number}>>({});
   const [myReacts, setMyReacts] = useState<Record<string,Set<string>>>({});
 
-  function toggleReact(postId:string, key:string) {
+  // Load saved reactions for this post and its replies from the database
+  const replyIds = replies.map(r => r.id).join(",");
+  useEffect(() => {
+    const ids = [post.id, ...replies.map(r => r.id)];
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("post_reactions").select("post_id,author,reaction").in("post_id", ids);
+      if (cancelled || !data) return;
+      const counts: Record<string,{w:number;l:number;h:number;c:number}> = {};
+      const mine: Record<string,Set<string>> = {};
+      for (const row of data) {
+        const c = counts[row.post_id] ?? (counts[row.post_id] = {w:0,l:0,h:0,c:0});
+        (c as Record<string,number>)[row.reaction] = ((c as Record<string,number>)[row.reaction] ?? 0) + 1;
+        if (currentUser && row.author === currentUser) (mine[row.post_id] ?? (mine[row.post_id] = new Set())).add(row.reaction);
+      }
+      setReacts(counts);
+      setMyReacts(mine);
+    })();
+    return () => { cancelled = true; };
+  }, [post.id, replyIds, currentUser]);
+
+  async function toggleReact(postId:string, key:string) {
+    if (!currentUser) return; // must be signed in to react
     const mySet = myReacts[postId] ?? new Set<string>();
     const had = mySet.has(key);
+    // Optimistic UI update
     const next = new Set(mySet); if (had) next.delete(key); else next.add(key);
     setMyReacts(p => ({...p,[postId]:next}));
     setReacts(p => {
       const cur = p[postId] ?? {w:0,l:0,h:0,c:0};
-      return {...p,[postId]:{...cur,[key]:(cur as Record<string,number>)[key]+(had?-1:1)}};
+      return {...p,[postId]:{...cur,[key]:Math.max(0,(cur as Record<string,number>)[key]+(had?-1:1))}};
     });
+    // Persist to the database
+    if (had) {
+      await supabase.from("post_reactions").delete()
+        .eq("post_id",postId).eq("author",currentUser).eq("reaction",key);
+    } else {
+      await supabase.from("post_reactions").insert({ post_id:postId, author:currentUser, reaction:key });
+    }
   }
   function rCount(postId:string, key:string) { return (reacts[postId] as Record<string,number> ?? {})[key] ?? 0; }
 

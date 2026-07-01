@@ -305,23 +305,25 @@ Small private or public groups of friends with shared interests across multiple 
 13. ✅ Inline composers — clicking "+ New Topic" or "Write a Read" expands a composer directly within the page (no popup window). Forum composer has two-column layout matching the real post. Read composer has cover zone, category pills, large title, coral underline, author block — all matching the published article view.
 14. ✅ Rich text editor — bold, italic, heading, blockquote, bullet list, image, colour swatches — used in all post composers and replies
 15. ✅ Stream tab — unified feed of all post types with filter chips
+16. ✅ Reactions saved to database — warmth/lightbulb/heart persist via the `post_reactions` table. Forums: full reaction row inside the thread. Sparks: warmth flame on the card. Forum list cards show a warmth flame count (and can be clicked to react). Warmth counts refresh when returning from a thread. Reacting requires being signed in.
 
-## Pending before next session
+## Database migrations — run these in Supabase if not already done
 
-**SQL migration needed (if not already run):** Run `supabase-forums-migration.sql` in Supabase to create/update the community_posts table with parent_id and tags columns:
-1. Go to https://supabase.com/dashboard/project/wntaftiaptuzwzcekfhq/sql/new
-2. Paste the full contents of `supabase-forums-migration.sql` (in the project root)
-3. Click Run
-This is safe to run even if the table already exists. It takes 30 seconds.
+Go to https://supabase.com/dashboard/project/wntaftiaptuzwzcekfhq/sql/new and paste + Run each file. All are safe to run more than once.
+1. `supabase-forums-migration.sql` — community_posts table (posts, replies, tags)
+2. `supabase-reactions-migration.sql` — post_reactions table (**includes GRANT statements — required, or saving silently fails**)
+3. `supabase-wiki-migration.sql` — wiki_pages + wiki_revisions tables (NEW — needed for the Wiki feature)
+
+**Lesson learned:** tables created via the SQL editor need explicit `GRANT SELECT/INSERT/UPDATE/DELETE ... TO anon, authenticated;` or the app gets "permission denied for table" (Postgres code 42501) even with RLS policies in place. Always include GRANTs in new table migrations.
 
 ## What to build next
 
-- **Reads — real image upload for cover image** — the cover zone in the Read composer currently shows a placeholder; wire it up to Supabase storage so users can actually upload a cover photo
-- **Reactions — persist to database** — warmth/lightbulb/heart reactions are client-side only right now (they reset on page reload). Need a `reactions` table in Supabase to store them permanently
-- **Wiki** — editable entries with edit history and change request system
+- **Wiki (IN PROGRESS)** — first version being built: create/view/edit community wiki pages with edit history. Change requests, trust tiers, and "promote forum post to wiki" are later phases.
+- **Reads — real image upload for cover image** — the cover zone in the Read composer currently shows a placeholder; wire it up to Supabase storage so users can actually upload a cover photo (user deferred this — future)
 - **Topic category tree** — top-level categories covering all subjects, not just YouTube
 - **Relevance-first search** — upgrade from basic SQL to Meilisearch or Typesense
 - **Reply counts in Stream tab** — forum threads showing in Stream should also show reply count
+- **Sparks/Reads full reaction set** — sparks + read cards currently only show warmth; could add lightbulb/heart like forums
 - **Post cards visual variety** — individual post cards should eventually have unique visual designs (different layouts, accent colours, textures). The feed should feel alive, not a uniform grid of identical boxes. Build once core features are stable.
 
 ---
