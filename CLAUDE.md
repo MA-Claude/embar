@@ -306,6 +306,7 @@ Small private or public groups of friends with shared interests across multiple 
 14. ✅ Rich text editor — bold, italic, heading, blockquote, bullet list, image, colour swatches — used in all post composers and replies
 15. ✅ Stream tab — unified feed of all post types with filter chips
 16. ✅ Reactions saved to database — warmth/lightbulb/heart persist via the `post_reactions` table. Forums: full reaction row inside the thread. Sparks: warmth flame on the card. Forum list cards show a warmth flame count (and can be clicked to react). Warmth counts refresh when returning from a thread. Reacting requires being signed in.
+17. ✅ Wiki — first version (needs `supabase-wiki-migration.sql` run to work). List of community wiki pages; create a new page (title + rich editor); view a page (editorial layout, green accent); edit a page; full edit history (every save snapshotted in `wiki_revisions`, viewable via the History button). Any signed-in user can create/edit for now — trust tiers / change requests / promote-to-wiki are later phases. Lives in the Wiki tab of a community; state is managed with `wikiView` ("list" | "page" | "create" | "edit"). Components: `WikiPageView`, `WikiEditor`. RichEditor was extended with an optional `initialHTML` prop so edit mode can load existing content.
 
 ## Database migrations — run these in Supabase if not already done
 
@@ -318,7 +319,7 @@ Go to https://supabase.com/dashboard/project/wntaftiaptuzwzcekfhq/sql/new and pa
 
 ## What to build next
 
-- **Wiki (IN PROGRESS)** — first version being built: create/view/edit community wiki pages with edit history. Change requests, trust tiers, and "promote forum post to wiki" are later phases.
+- **Wiki — later phases** — trust tiers (who can edit directly vs. submit change requests), change-request approval flow, "promote forum post to wiki", flagging/freeze for review, and side-by-side revision diffs. The MVP (create/view/edit/history) is built.
 - **Reads — real image upload for cover image** — the cover zone in the Read composer currently shows a placeholder; wire it up to Supabase storage so users can actually upload a cover photo (user deferred this — future)
 - **Topic category tree** — top-level categories covering all subjects, not just YouTube
 - **Relevance-first search** — upgrade from basic SQL to Meilisearch or Typesense

@@ -19,6 +19,15 @@ type CommPost = {
   title: string | null; body: string; created_at: string;
   parent_id: string | null; tags: string[] | null;
 };
+type WikiPage = {
+  id: string; channel_id: string; title: string; body: string;
+  created_by: string; updated_by: string; created_at: string; updated_at: string;
+};
+type WikiRevision = {
+  id: string; page_id: string; title: string; body: string;
+  editor: string; note: string | null; created_at: string;
+};
+type WikiView = "list" | "page" | "edit" | "create";
 type PageTab      = "community" | "videos" | "about";
 type CommSection  = "stream" | "spark" | "forum" | "read" | "wiki" | "chat" | "gathering";
 type SparkSort    = "hot" | "new" | "top";
@@ -137,7 +146,7 @@ const TEXT_COLORS = [
   { col:"#D46A6A",       label:"Red"     },
 ];
 
-function RichEditor({ placeholder, onChange, minHeight=160 }: { placeholder:string; onChange:(html:string)=>void; minHeight?:number }) {
+function RichEditor({ placeholder, onChange, minHeight=160, initialHTML }: { placeholder:string; onChange:(html:string)=>void; minHeight?:number; initialHTML?:string }) {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -146,6 +155,8 @@ function RichEditor({ placeholder, onChange, minHeight=160 }: { placeholder:stri
       Image.configure({ inline: false }),
       Placeholder.configure({ placeholder }),
     ],
+    content: initialHTML ?? "",
+    immediatelyRender: false,
     onUpdate({ editor }) { onChange(editor.getHTML()); },
     editorProps: {
       attributes: {
@@ -254,6 +265,18 @@ export default function ChannelPage({ params }: { params: Promise<{ id: string }
   // Warmth reactions on feed cards (loaded for all posts on this page)
   const [warmth,   setWarmth]   = useState<Record<string, number>>({});
   const [myWarmth, setMyWarmth] = useState<Set<string>>(new Set());
+
+  // Wiki
+  const [wikiPages,    setWikiPages]    = useState<WikiPage[]>([]);
+  const [wikiLoading,  setWikiLoading]  = useState(false);
+  const [wikiView,     setWikiView]     = useState<WikiView>("list");
+  const [activeWiki,   setActiveWiki]   = useState<WikiPage | null>(null);
+  const [wTitle,       setWTitle]       = useState("");
+  const [wBody,        setWBody]        = useState("");
+  const [wNote,        setWNote]        = useState("");
+  const [wSaving,      setWSaving]      = useState(false);
+  const [wikiRevisions,setWikiRevisions]= useState<WikiRevision[]>([]);
+  const [wikiHistoryOpen,setWikiHistoryOpen]= useState(false);
 
   // Forum modal
   const [forumOpen,   setForumOpen]   = useState(false);
@@ -400,7 +423,56 @@ export default function ChannelPage({ params }: { params: Promise<{ id: string }
     setReplyCounts(p => ({ ...p, [openPost.id]: (p[openPost.id] ?? 0) + 1 }));
     setReplyBody(""); setReplyPosting(false);
   }
-  function changeSection(s: CommSection) { setSection(s); closeThread(); setSearch(""); setSparkOpen(false); }
+  function changeSection(s: CommSection) { setSection(s); closeThread(); setSearch(""); setSparkOpen(false); setWikiView("list"); setActiveWiki(null); setWikiHistoryOpen(false); }
+
+  // ── Wiki ──────────────────────────────────────────────────────────────────
+  const loadWiki = useCallback(async () => {
+    if (!channelId) return;
+    setWikiLoading(true);
+    const { data } = await supabase
+      .from("wiki_pages").select("*")
+      .eq("channel_id", channelId).order("updated_at", { ascending: false });
+    setWikiPages(data ?? []);
+    setWikiLoading(false);
+  }, [channelId]);
+
+  async function openWikiPage(page: WikiPage) {
+    setActiveWiki(page); setWikiView("page"); setWikiHistoryOpen(false); setWikiRevisions([]);
+    const { data } = await supabase.from("wiki_revisions")
+      .select("*").eq("page_id", page.id).order("created_at", { ascending: false });
+    setWikiRevisions(data ?? []);
+  }
+  function startCreateWiki() { setWTitle(""); setWBody(""); setWNote(""); setActiveWiki(null); setWikiView("create"); }
+  function startEditWiki() { if (!activeWiki) return; setWTitle(activeWiki.title); setWBody(activeWiki.body); setWNote(""); setWikiView("edit"); }
+  function backToWikiList() { setWikiView("list"); setActiveWiki(null); setWikiHistoryOpen(false); }
+
+  async function saveWiki() {
+    if (!wTitle.trim() || !currentUser || !channelId || wSaving) return;
+    setWSaving(true);
+    if (wikiView === "create") {
+      const { data } = await supabase.from("wiki_pages")
+        .insert({ channel_id:channelId, title:wTitle.trim(), body:wBody, created_by:currentUser, updated_by:currentUser })
+        .select().single();
+      if (data) {
+        await supabase.from("wiki_revisions").insert({ page_id:data.id, title:data.title, body:data.body, editor:currentUser, note:"Created page" });
+        await loadWiki();
+        await openWikiPage(data as WikiPage);
+      }
+    } else if (wikiView === "edit" && activeWiki) {
+      const { data } = await supabase.from("wiki_pages")
+        .update({ title:wTitle.trim(), body:wBody, updated_by:currentUser, updated_at:new Date().toISOString() })
+        .eq("id", activeWiki.id).select().single();
+      if (data) {
+        await supabase.from("wiki_revisions").insert({ page_id:activeWiki.id, title:wTitle.trim(), body:wBody, editor:currentUser, note:wNote.trim() || null });
+        await loadWiki();
+        await openWikiPage(data as WikiPage);
+      }
+    }
+    setWSaving(false);
+  }
+
+  // Load wiki pages when the Wiki section is opened (and when channel changes)
+  useEffect(() => { if (section === "wiki" && channelId) loadWiki(); }, [section, channelId, loadWiki]);
   function changeViewMode(m: "light"|"dark"|"community") {
     setViewMode(m);
     if (channel) localStorage.setItem(`embar-channel-theme-${channel.youtube_channel_id}`, m);
@@ -850,8 +922,62 @@ export default function ChannelPage({ params }: { params: Promise<{ id: string }
             {/* WIKI */}
             {section==="wiki" && (
               <>
-                <SHdr icon={IcoWiki("#4ABA5A")} title="Wiki" sub="Community knowledge base" />
-                <div style={{ marginTop:32 }}><Empty icon={IcoWiki("#4ABA5A")} title="Wiki coming soon" sub="Trusted members will write and maintain articles here." /></div>
+                {/* LIST VIEW */}
+                {wikiView === "list" && (
+                  <>
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:13 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:9 }}>
+                        {IcoWiki("#4ABA5A")}
+                        <span style={{ fontFamily:F.syne, fontSize:16, fontWeight:700, color:"var(--text)", letterSpacing:"-.025em" }}>Wiki</span>
+                        <span style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)" }}>{wikiPages.length} {wikiPages.length===1?"page":"pages"} · community knowledge base</span>
+                      </div>
+                      {currentUser && (
+                        <button onClick={startCreateWiki} style={{ fontFamily:F.body, fontSize:12, fontWeight:600, padding:"7px 15px", borderRadius:8, border:"none", background:A, color:"var(--text)", cursor:"pointer" }}>+ New Page</button>
+                      )}
+                    </div>
+
+                    {wikiLoading ? <Spin/>
+                      : wikiPages.length === 0
+                      ? <Empty icon={IcoWiki("#4ABA5A")} title="No wiki pages yet" sub="Start the knowledge base — write the first page anyone can build on." action={currentUser?{label:"Create the first page",onClick:startCreateWiki}:undefined} />
+                      : (
+                        <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:10, overflow:"hidden" }}>
+                          {wikiPages.map((w,i) => (
+                            <div key={w.id} onClick={()=>openWikiPage(w)}
+                              style={{ padding:"14px 16px", borderBottom:i===wikiPages.length-1?"none":"1px solid var(--border)", cursor:"pointer", display:"flex", alignItems:"center", gap:12 }}
+                              onMouseEnter={e=>{e.currentTarget.style.background="var(--surface2)";}} onMouseLeave={e=>{e.currentTarget.style.background="transparent";}}>
+                              <div style={{ flexShrink:0 }}>{IcoWiki("#4ABA5A")}</div>
+                              <div style={{ flex:1, minWidth:0 }}>
+                                <div style={{ fontFamily:F.syne, fontSize:14.5, fontWeight:600, color:"var(--text)", letterSpacing:"-.015em", marginBottom:3 }}>{w.title}</div>
+                                <div style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)" }}>Edited by {w.updated_by} · {timeAgo(w.updated_at)}</div>
+                              </div>
+                              <span style={{ fontFamily:F.body, fontSize:11, fontWeight:600, color:"#4ABA5A", flexShrink:0 }}>Read →</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                  </>
+                )}
+
+                {/* PAGE VIEW */}
+                {wikiView === "page" && activeWiki && (
+                  <WikiPageView
+                    page={activeWiki} revisions={wikiRevisions}
+                    historyOpen={wikiHistoryOpen} setHistoryOpen={setWikiHistoryOpen}
+                    canEdit={!!currentUser} onEdit={startEditWiki} onBack={backToWikiList}
+                  />
+                )}
+
+                {/* CREATE / EDIT VIEW */}
+                {(wikiView === "create" || wikiView === "edit") && (
+                  <WikiEditor
+                    mode={wikiView} title={wTitle} setTitle={setWTitle}
+                    initialBody={wikiView==="edit" ? (activeWiki?.body ?? "") : ""}
+                    onBodyChange={setWBody} note={wNote} setNote={setWNote}
+                    saving={wSaving} onSave={saveWiki}
+                    onCancel={() => { if (wikiView==="edit" && activeWiki) openWikiPage(activeWiki); else backToWikiList(); }}
+                    A={A}
+                  />
+                )}
               </>
             )}
 
@@ -1563,6 +1689,124 @@ function ThreadView({ post, replies, repliesLoading, replyBody, setReplyBody, on
             </div>
           </div>
         ))}
+    </div>
+  );
+}
+
+// ── Wiki views ───────────────────────────────────────────────────────────────
+function WikiPageView({ page, revisions, historyOpen, setHistoryOpen, canEdit, onEdit, onBack }: {
+  page:WikiPage; revisions:WikiRevision[];
+  historyOpen:boolean; setHistoryOpen:(v:boolean)=>void;
+  canEdit:boolean; onEdit:()=>void; onBack:()=>void;
+}) {
+  function fmt(d:string) {
+    const dt = new Date(d);
+    return `${dt.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})} · ${dt.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}`;
+  }
+  return (
+    <div>
+      {/* Breadcrumb */}
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:18, fontFamily:F.body, fontSize:12, color:"var(--text-muted)" }}>
+        <button onClick={onBack} style={{ color:"var(--text-muted)", background:"none", border:"none", cursor:"pointer", fontFamily:F.body, fontSize:12, padding:0 }}>Wiki</button>
+        <span style={{ opacity:.5 }}>›</span>
+        <span style={{ color:"var(--text-mid)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:500 }}>{page.title}</span>
+      </div>
+
+      {/* Lore badge */}
+      <div style={{ marginBottom:11 }}>
+        <span style={{ fontFamily:F.syne, fontSize:"8.5px", fontWeight:700, padding:"2px 9px", borderRadius:999, background:"rgba(74,186,90,.1)", color:"#4ABA5A", border:"1px solid rgba(74,186,90,.24)", textTransform:"uppercase", letterSpacing:".1em" }}>Lore · Wiki</span>
+      </div>
+
+      {/* Title */}
+      <div style={{ fontFamily:F.syne, fontSize:26, fontWeight:800, color:"var(--text)", lineHeight:1.25, letterSpacing:"-.03em", marginBottom:10 }}>{page.title}</div>
+
+      {/* Meta + actions */}
+      <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:20, flexWrap:"wrap", paddingBottom:16, borderBottom:"1px solid var(--border)" }}>
+        <span style={{ fontFamily:F.body, fontSize:11.5, color:"var(--text-muted)" }}>
+          Started by <span style={{ color:"var(--text-mid)", fontWeight:600 }}>{page.created_by}</span> · last edited by <span style={{ color:"var(--text-mid)", fontWeight:600 }}>{page.updated_by}</span> {timeAgo(page.updated_at)}
+        </span>
+        <div style={{ marginLeft:"auto", display:"flex", gap:8 }}>
+          <button onClick={()=>setHistoryOpen(!historyOpen)} style={{ fontFamily:F.body, fontSize:11.5, fontWeight:600, padding:"6px 13px", borderRadius:8, border:"1px solid var(--border)", background:"transparent", color:"var(--text-mid)", cursor:"pointer" }}>
+            {historyOpen ? "Hide history" : `History (${revisions.length})`}
+          </button>
+          {canEdit && (
+            <button onClick={onEdit} style={{ fontFamily:F.body, fontSize:11.5, fontWeight:600, padding:"6px 15px", borderRadius:8, border:"none", background:"#4ABA5A", color:"#0C1A0E", cursor:"pointer" }}>✎ Edit</button>
+          )}
+        </div>
+      </div>
+
+      {/* History panel */}
+      {historyOpen && (
+        <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:10, padding:"6px 0", marginBottom:20 }}>
+          <div style={{ fontFamily:F.syne, fontSize:11, fontWeight:700, letterSpacing:".08em", textTransform:"uppercase", color:"var(--text-muted)", padding:"8px 16px 6px" }}>Edit history</div>
+          {revisions.length === 0
+            ? <div style={{ fontFamily:F.body, fontSize:12, color:"var(--text-muted)", padding:"6px 16px 12px" }}>No history recorded yet.</div>
+            : revisions.map((r,i) => (
+              <div key={r.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 16px", borderTop:"1px solid var(--border)" }}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <span style={{ fontFamily:F.body, fontSize:12, color:"var(--text-mid)", fontWeight:600 }}>{r.editor}</span>
+                  {r.note && <span style={{ fontFamily:F.body, fontSize:11.5, color:"var(--text-muted)" }}> — {r.note}</span>}
+                </div>
+                <span style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)", flexShrink:0 }}>{i===0 ? "current · " : ""}{fmt(r.created_at)}</span>
+              </div>
+            ))}
+        </div>
+      )}
+
+      {/* Body */}
+      <div className="wiki-article" dangerouslySetInnerHTML={{__html: page.body || "<p style='color:var(--text-muted)'>This page is empty. Click Edit to add content.</p>"}} />
+      <style>{`
+        .wiki-article { font-family: ${F.body}; font-size: 14.5px; color: var(--text-mid); line-height: 1.85; }
+        .wiki-article h2 { font-family: ${F.syne}; font-size: 19px; font-weight: 700; color: var(--text); margin: 26px 0 9px; letter-spacing: -.02em; }
+        .wiki-article p { margin: 0 0 16px; }
+        .wiki-article blockquote { border-left: 3px solid #4ABA5A; padding: 12px 18px; margin: 20px 0; color: #4ABA5A; font-style: italic; background: rgba(74,186,90,.06); border-radius: 0 8px 8px 0; }
+        .wiki-article a { color: #4ABA5A; text-decoration: none; }
+        .wiki-article a:hover { text-decoration: underline; }
+        .wiki-article strong { color: var(--text); }
+        .wiki-article ul { padding-left: 22px; margin: 8px 0 16px; }
+        .wiki-article li { margin-bottom: 5px; }
+        .wiki-article img { max-width: 100%; border-radius: 8px; margin: 10px 0; }
+      `}</style>
+    </div>
+  );
+}
+
+function WikiEditor({ mode, title, setTitle, initialBody, onBodyChange, note, setNote, saving, onSave, onCancel, A }: {
+  mode:"create"|"edit"; title:string; setTitle:(v:string)=>void;
+  initialBody:string; onBodyChange:(v:string)=>void;
+  note:string; setNote:(v:string)=>void;
+  saving:boolean; onSave:()=>void; onCancel:()=>void; A:string;
+}) {
+  return (
+    <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12, overflow:"hidden" }}>
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 16px", borderBottom:"1px solid var(--border)", background:"var(--bg)" }}>
+        <span style={{ fontFamily:F.syne, fontSize:12, fontWeight:700, letterSpacing:".06em", textTransform:"uppercase", color:"#4ABA5A" }}>{mode==="create" ? "New wiki page" : "Editing page"}</span>
+        <button onClick={onCancel} style={{ background:"none", border:"none", fontSize:15, color:"var(--text-muted)", cursor:"pointer", lineHeight:1 }}>✕</button>
+      </div>
+
+      {/* Title */}
+      <div style={{ padding:"14px 18px 0" }}>
+        <textarea value={title} onChange={e=>setTitle(e.target.value)} placeholder="Page title…" autoFocus rows={1}
+          style={{ width:"100%", background:"transparent", border:"none", outline:"none", resize:"none", fontFamily:F.syne, fontSize:24, fontWeight:800, color:"var(--text)", letterSpacing:"-.03em", lineHeight:1.25, boxSizing:"border-box" }} />
+        <div style={{ width:44, height:3, background:"#4ABA5A", borderRadius:2, margin:"8px 0 14px" }} />
+      </div>
+
+      {/* Body editor — key forces a fresh mount so edit mode seeds existing content */}
+      <div style={{ borderTop:"1px solid var(--border)" }}>
+        <RichEditor key={mode} placeholder="Write the page. Anyone can build on it later…" onChange={onBodyChange} minHeight={240} initialHTML={initialBody} />
+      </div>
+
+      {/* Footer: change note + save */}
+      <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 16px", borderTop:"1px solid var(--border)", background:"var(--bg)" }}>
+        {mode==="edit" && (
+          <input value={note} onChange={e=>setNote(e.target.value)} placeholder="What changed? (optional)"
+            style={{ flex:1, background:"transparent", border:"none", outline:"none", fontFamily:F.body, fontSize:12, color:"var(--text)" }} />
+        )}
+        {mode==="create" && <div style={{ flex:1 }} />}
+        <button onClick={onCancel} style={{ fontFamily:F.body, fontSize:12, padding:"7px 14px", borderRadius:8, border:"1px solid var(--border)", background:"transparent", color:"var(--text-muted)", cursor:"pointer" }}>Cancel</button>
+        <button onClick={onSave} disabled={!title.trim()||saving} style={{ fontFamily:F.body, fontSize:12, fontWeight:600, padding:"7px 18px", borderRadius:8, border:"none", background:title.trim()?A:"var(--surface2)", color:title.trim()?"var(--text)":"var(--text-muted)", cursor:title.trim()?"pointer":"default" }}>{saving ? "Saving…" : mode==="create" ? "Create page" : "Save changes"}</button>
+      </div>
     </div>
   );
 }
