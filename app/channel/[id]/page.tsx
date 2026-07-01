@@ -656,7 +656,7 @@ export default function ChannelPage({ params }: { params: Promise<{ id: string }
                   {postsLoading ? <Spin/>
                     : streamPosts.length === 0
                     ? <Empty icon={IcoStream("#4ABA5A")} title="Nothing here yet" sub="Posts from all sections appear here once the community gets going." />
-                    : streamPosts.map(p => <StreamCard key={p.id} post={p} replyCount={replyCounts[p.id]??0} onClick={() => openThread(p)} AB="#4ABA5A" />)}
+                    : streamPosts.map(p => <StreamCard key={p.id} post={p} replyCount={replyCounts[p.id]??0} warmth={warmth[p.id]??0} warmed={myWarmth.has(p.id)} onWarmth={()=>toggleWarmth(p.id)} canReact={!!currentUser} onClick={() => openThread(p)} AB="#4ABA5A" />)}
                 </div>
               </>
             )}
@@ -1151,7 +1151,7 @@ const TYPE_META: Record<string,{label:string;col:string;bg:string}> = {
   read:  { label:"◈ Read",  col:"var(--coral)", bg:"rgba(212,132,90,.1)" },
   wiki:  { label:"⊟ Wiki",  col:"var(--text-muted)", bg:"var(--surface2)" },
 };
-function StreamCard({ post, replyCount, onClick, AB }: { post:CommPost; replyCount:number; onClick:()=>void; AB:string }) {
+function StreamCard({ post, replyCount, warmth, warmed, onWarmth, canReact, onClick, AB }: { post:CommPost; replyCount:number; warmth:number; warmed:boolean; onWarmth:()=>void; canReact:boolean; onClick:()=>void; AB:string }) {
   const [h,setH] = useState(false);
   const t = TYPE_META[post.type] ?? TYPE_META.spark;
   const visibleTags = getVisibleTags(post);
@@ -1169,6 +1169,12 @@ function StreamCard({ post, replyCount, onClick, AB }: { post:CommPost; replyCou
         <div style={{ fontFamily:F.body, fontSize:12, color:"var(--text-mid)", lineHeight:1.6, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden", marginBottom:visibleTags.length?7:0 }} dangerouslySetInnerHTML={{__html: post.body}} />
         {visibleTags.length>0 && <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:7 }}>{visibleTags.map(tg=><TagPill key={tg} tag={tg}/>)}</div>}
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          <button
+            onClick={(e)=>{ e.stopPropagation(); onWarmth(); }}
+            title={canReact ? (warmed?"Remove warmth":"Give warmth") : "Sign in to react"}
+            style={{ display:"flex", alignItems:"center", gap:4, padding:"2px 8px", borderRadius:999, background:warmed?"rgba(212,132,90,.12)":"transparent", border:`1px solid ${warmed?"rgba(212,132,90,.3)":"var(--border)"}`, cursor:canReact?"pointer":"default" }}>
+            <IcoFlame/><span style={{ fontFamily:F.body, fontSize:11, fontWeight:600, color:"var(--coral)" }}>{warmth}</span>
+          </button>
           <div style={{ display:"flex", alignItems:"center", gap:4 }}>{IcoReplyBubble("var(--text-muted)")}<span style={{ fontFamily:F.body, fontSize:11, color:"var(--text-muted)" }}>{replyCount} replies</span></div>
           <span style={{ fontFamily:F.body, fontSize:11, fontWeight:600, color:AB, marginLeft:"auto", opacity:h?1:0, transition:"opacity .1s" }}>Open →</span>
         </div>
